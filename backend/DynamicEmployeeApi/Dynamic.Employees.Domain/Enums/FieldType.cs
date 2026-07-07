@@ -1,4 +1,4 @@
-namespace DynamicEmployee.Core.Enums;
+namespace Dynamic.Employees.Domain.Enums;
 
 public enum FieldType
 {

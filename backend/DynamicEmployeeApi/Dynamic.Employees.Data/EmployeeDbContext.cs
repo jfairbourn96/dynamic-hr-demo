@@ -1,7 +1,6 @@
-using Dynamic.Employees.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace EmployeeApi;
+namespace Dynamic.Employees.Data;
 
 public class EmployeeDbContext(DbContextOptions<EmployeeDbContext> options) 
     : BaseEmployeeDbContext(options)

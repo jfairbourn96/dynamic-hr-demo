@@ -1,7 +1,8 @@
-using Dynamic.Employees.Core.Models;
+using Dynamic.Employees.Application.Services;
+using Dynamic.Employees.Domain.Models;
+using EmployeeApi.Mappers;
 using EmployeeApi.Requests;
 using EmployeeApi.Responses;
-using EmployeeApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EmployeeApi.Controllers;
@@ -27,7 +28,7 @@ public class EmployeeTypeController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         List<EmployeeType> types = await _service.GetAllAsync();
-        return Ok(types.Select(ToResponse).ToList());
+        return Ok(types.Select(type => type.ToResponse()).ToList());
     }
 
     /// <summary>Returns the employee type with the specified <paramref name="id"/>.</summary>
@@ -45,7 +46,7 @@ public class EmployeeTypeController : ControllerBase
             return NotFound();
         }
 
-        return Ok(ToResponse(type));
+        return Ok(type.ToResponse());
     }
 
     /// <summary>Creates a new employee type.</summary>
@@ -56,8 +57,8 @@ public class EmployeeTypeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeTypeRequest request)
     {
-        EmployeeType type = await _service.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = type.Id }, ToResponse(type));
+        EmployeeType type = await _service.CreateAsync(request.ToCommand());
+        return CreatedAtAction(nameof(GetById), new { id = type.Id }, type.ToResponse());
     }
 
     /// <summary>Replaces the employee type with the specified <paramref name="id"/>.</summary>
@@ -69,14 +70,14 @@ public class EmployeeTypeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] CreateEmployeeTypeRequest request)
     {
-        EmployeeType? type = await _service.UpdateAsync(id, request);
+        EmployeeType? type = await _service.UpdateAsync(id, request.ToCommand());
 
         if (type is null)
         {
             return NotFound();
         }
 
-        return Ok(ToResponse(type));
+        return Ok(type.ToResponse());
     }
 
     /// <summary>Deletes the employee type with the specified <paramref name="id"/>.</summary>
@@ -97,25 +98,4 @@ public class EmployeeTypeController : ControllerBase
         return NoContent();
     }
 
-    private static EmployeeTypeResponse ToResponse(EmployeeType type) => new()
-    {
-        Id = type.Id.ToString(),
-        Name = type.Name,
-        Description = type.Description,
-        ParentTypeId = null,
-        Fields = type.Fields.Select(ToFieldResponse).ToList(),
-        CreatedAt = type.CreatedDate,
-        UpdatedAt = type.UpdatedDate,
-    };
-
-    private static EmployeeTypeFieldResponse ToFieldResponse(EmployeeTypeField field) => new()
-    {
-        Id = field.Id.ToString(),
-        Name = field.Name,
-        Label = field.Label,
-        FieldType = field.FieldType,
-        Required = field.Required,
-        Options = field.Options.Select(o => new FieldOptionResponse { Label = o.Label, Value = o.Value }).ToList(),
-        Order = field.Order,
-    };
 }

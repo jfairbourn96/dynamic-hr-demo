@@ -1,4 +1,4 @@
-namespace Dynamic.Employees.Core.Models;
+namespace Dynamic.Employees.Domain.Models;
 
 /// <summary>
 /// A single selectable option for a field of type <c>Select</c>.

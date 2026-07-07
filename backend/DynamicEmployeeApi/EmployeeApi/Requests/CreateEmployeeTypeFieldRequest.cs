@@ -1,4 +1,4 @@
-using DynamicEmployee.Core.Enums;
+using Dynamic.Employees.Domain.Enums;
 
 namespace EmployeeApi.Requests;
 

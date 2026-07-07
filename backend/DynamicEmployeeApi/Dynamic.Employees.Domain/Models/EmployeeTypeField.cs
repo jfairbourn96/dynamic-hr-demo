@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using DynamicEmployee.Core.Enums;
+using Dynamic.Employees.Domain.Enums;
 
-namespace Dynamic.Employees.Core.Models;
+namespace Dynamic.Employees.Domain.Models;
 
 public class EmployeeTypeField
 {

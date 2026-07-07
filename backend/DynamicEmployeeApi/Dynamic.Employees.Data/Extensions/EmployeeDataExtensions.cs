@@ -1,4 +1,4 @@
-using Dynamic.Employees.Core.Interfaces;
+using Dynamic.Employees.Application.Interfaces;
 using Dynamic.Employees.Data.Repositories;
 using Dynamic.Json.EfCore.SqlServer;
 using Microsoft.EntityFrameworkCore;
@@ -8,20 +8,26 @@ namespace Dynamic.Employees.Data.Extensions;
 
 public static class EmployeeDataExtensions
 {
-    public static IServiceCollection RegisterEmployeeDataServices<TContext>(this IServiceCollection services,
-        string connectionString) where TContext : BaseEmployeeDbContext
+    public static IServiceCollection RegisterEmployeeDataServices(
+        this IServiceCollection services,
+        string connectionString)
     {
-        services.AddDbContext<TContext>(options =>
+        services.AddDbContext<EmployeeDbContext>(options =>
             options
                 .UseSqlServer(connectionString,
-                    x => x.MigrationsAssembly(typeof(TContext).Assembly.GetName().Name))
+                    x => x.MigrationsAssembly(typeof(EmployeeDbContext).Assembly.GetName().Name))
                 .UseDynamicJsonSqlServer());
 
-        // Allows controllers/services to inject BaseEmployeeDbContext directly.
-        // Remove once the repository pattern is in place and nothing injects the DbContext directly.
-        services.AddScoped<BaseEmployeeDbContext>(sp => sp.GetRequiredService<TContext>());
+        services.AddScoped<BaseEmployeeDbContext>(sp => sp.GetRequiredService<EmployeeDbContext>());
 
-        services.AddScoped<IEmployeeTypeRepository, EmployeeTypeRepository>();
+        services.AddScoped<EfEmployeeRepository>();
+        services.AddScoped<IEmployeeSearchRepository>(sp => sp.GetRequiredService<EfEmployeeRepository>());
+        services.AddScoped<IEmployeeReader>(sp => sp.GetRequiredService<EfEmployeeRepository>());
+        services.AddScoped<IEmployeeWriter>(sp => sp.GetRequiredService<EfEmployeeRepository>());
+
+        services.AddScoped<EfEmployeeTypeRepository>();
+        services.AddScoped<IEmployeeTypeReader>(sp => sp.GetRequiredService<EfEmployeeTypeRepository>());
+        services.AddScoped<IEmployeeTypeWriter>(sp => sp.GetRequiredService<EfEmployeeTypeRepository>());
 
         return services;
     }

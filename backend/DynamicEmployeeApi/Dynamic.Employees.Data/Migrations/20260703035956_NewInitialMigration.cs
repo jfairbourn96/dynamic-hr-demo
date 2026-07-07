@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace EmployeeApi.Migrations
+namespace Dynamic.Employees.Data.Migrations
 {
     /// <inheritdoc />
     public partial class NewInitialMigration : Migration

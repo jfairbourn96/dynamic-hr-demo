@@ -1,20 +1,16 @@
+using Dynamic.Employees.Application.Extensions;
 using Dynamic.Employees.Data;
 using Dynamic.Employees.Data.Extensions;
-using Dynamic.Json.EfCore.AspNetCore;
-using EmployeeApi;
-using EmployeeApi.Services;
-using Microsoft.EntityFrameworkCore;
+using Dynamic.Json.AspNetCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
 
-builder.Services.RegisterEmployeeDataServices<EmployeeDbContext>(connectionString);
-builder.Services.AddDynamicJsonEfCoreAspNetCore();
-
-// Register application services
-builder.Services.AddScoped<IEmployeeTypeService, EmployeeTypeService>();
+builder.Services.RegisterEmployeeDataServices(connectionString);
+builder.Services.RegisterEmployeeApplicationServices();
+builder.Services.AddDynamicJsonAspNetCore();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

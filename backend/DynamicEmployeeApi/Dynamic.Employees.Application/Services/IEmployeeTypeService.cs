@@ -1,7 +1,7 @@
-using Dynamic.Employees.Core.Models;
-using EmployeeApi.Requests;
+using Dynamic.Employees.Application.Commands;
+using Dynamic.Employees.Domain.Models;
 
-namespace EmployeeApi.Services;
+namespace Dynamic.Employees.Application.Services;
 
 /// <summary>
 /// Provides business logic operations for employee types.
@@ -21,12 +21,12 @@ public interface IEmployeeTypeService
     /// <summary>
     /// Creates a new employee type.
     /// </summary>
-    Task<EmployeeType> CreateAsync(CreateEmployeeTypeRequest request);
+    Task<EmployeeType> CreateAsync(CreateEmployeeTypeCommand command);
 
     /// <summary>
     /// Updates an existing employee type.
     /// </summary>
-    Task<EmployeeType?> UpdateAsync(Guid id, CreateEmployeeTypeRequest request);
+    Task<EmployeeType?> UpdateAsync(Guid id, CreateEmployeeTypeCommand command);
 
     /// <summary>
     /// Deletes an employee type by ID.
