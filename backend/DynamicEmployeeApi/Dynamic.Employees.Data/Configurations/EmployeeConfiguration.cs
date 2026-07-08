@@ -1,4 +1,4 @@
-using Dynamic.Employees.Core.Models;
+using Dynamic.Employees.Domain.Models;
 using Dynamic.Json.EfCore.Metadata;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

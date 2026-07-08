@@ -1,4 +1,4 @@
-using Dynamic.Employees.Core.Models;
+using Dynamic.Employees.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dynamic.Employees.Data;

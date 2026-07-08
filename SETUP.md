@@ -4,175 +4,204 @@
 
 | Tool | Version | Notes |
 |---|---|---|
-| Node.js | 20.x or 22.x | `node --version` to check |
-| npm | 10.x | bundled with Node |
-| .NET SDK | 10.x | `dotnet --version` to check |
-| dotnet-ef CLI | 10.x | see below |
-| SQL Server | any | LocalDB works for dev — see below |
-| Git | any | |
+| .NET SDK | 10.x | `dotnet --version` |
+| dotnet-ef CLI | 10.x | Required for migrations |
+| Node.js | 20.x or 22.x | `node --version` |
+| npm | 10.x | Bundled with Node |
+| SQL Server | Any dev instance | LocalDB works for this repo |
+| Git | Any recent version | |
 
-### Install / update the EF Core CLI tool
+Install or update the EF Core CLI:
 
-```bash
+```powershell
 dotnet tool install --global dotnet-ef
-# or if already installed:
 dotnet tool update --global dotnet-ef
 ```
 
-### SQL Server for local development
+## Clone
 
-The default connection string in `appsettings.json` targets **SQL Server LocalDB**, which ships with Visual Studio. If you don't have Visual Studio, the easiest alternatives are:
-
-- **SQL Server Express LocalDB** — install from [aka.ms/sqllocaldb](https://aka.ms/sqllocaldb)
-- **SQL Server Developer Edition** — free, full-featured, runs as a Windows service
-- **Docker** — `docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourPassword123" -p 1433:1433 mcr.microsoft.com/mssql/server:latest`
-
-To use Docker or a full SQL Server instance, update the connection string in `backend/DynamicHR.API/appsettings.json`:
-
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Server=localhost;Database=DynamicHR;User Id=sa;Password=YourPassword123;TrustServerCertificate=True;"
-}
+```powershell
+git clone https://github.com/jfairbourn96/dynamic-hr-demo.git
+cd dynamic-hr-demo
 ```
-
----
-
-## Clone the repo
-
-```bash
-git clone https://github.com/jfairbourn96/dynamic-hr-in-ef-core.git
-cd dynamic-hr-in-ef-core
-```
-
-> **Corporate machines with SSL proxy:** if `git clone` fails with a certificate error, run:
-> ```bash
-> git -c http.sslVerify=false clone https://github.com/jfairbourn96/dynamic-hr-in-ef-core.git
-> ```
-
----
 
 ## Backend
 
-### First-time setup
+The backend solution lives at:
 
-```bash
-cd backend
-dotnet restore
+```text
+backend/DynamicEmployeeApi/DynamicEmployeeApi.sln
 ```
 
-### Apply database migrations
+Current backend projects:
 
-Migrations live in `DynamicHR.Data/Migrations/`. Run this from the `backend/` directory any time you pull new migration files:
-
-```bash
-dotnet ef database update --project DynamicHR.Data --startup-project DynamicHR.API
+```text
+Dynamic.Employees.Domain                 Domain models and enums
+Dynamic.Employees.Application            Use-case services, commands, search models, and repository ports
+Dynamic.Employees.Data                   EF Core DbContext, migrations, configurations, and repositories
+EmployeeApi                              ASP.NET Core controllers, DTOs, mapping, and composition
+Dynamic.Employees.Application.UnitTests  Application unit tests
+Dynamic.Employees.Data.UnitTests         EF repository unit tests
 ```
 
-The API also auto-applies pending migrations on startup in the Development environment, so running `dotnet run` on a fresh clone will create the database automatically.
+The HR projects consume the published Dynamic.Json packages:
 
-### Run the API
-
-```bash
-dotnet run --project DynamicHR.API
+```text
+Dynamic.Json.Search              0.2.0-preview.1
+Dynamic.Json.AspNetCore          0.2.0-preview.1
+Dynamic.Json.EfCore.SqlServer    0.2.0-preview.1
 ```
 
-API runs at `http://localhost:5000` (HTTP) and `https://localhost:5001` (HTTPS).  
-OpenAPI spec available at `http://localhost:5000/openapi/v1.json` in Development.
+### Restore And Build
 
-### Adding a new migration (after schema changes)
+Run from the repository root:
 
-```bash
-dotnet ef migrations add <MigrationName> --project DynamicHR.Data --startup-project DynamicHR.API
-dotnet ef database update --project DynamicHR.Data --startup-project DynamicHR.API
+```powershell
+dotnet restore backend\DynamicEmployeeApi\DynamicEmployeeApi.sln
+dotnet build backend\DynamicEmployeeApi\DynamicEmployeeApi.sln
 ```
 
----
+### Database
+
+The default connection string in `backend/DynamicEmployeeApi/EmployeeApi/appsettings.json` uses SQL Server LocalDB:
+
+```json
+"DefaultConnection": "Server=(localdb)\\.\\DYNAMICHRPUBLIC;Database=master;Trusted_Connection=True;"
+```
+
+To use SQL Server Developer Edition, SQL Server Express, or Docker SQL Server, update that connection string before applying migrations.
+
+### Apply Migrations
+
+`EmployeeDbContext` and migrations live in `Dynamic.Employees.Data`. `EmployeeApi` is still the startup project because it provides configuration and dependency injection.
+
+Run from the repository root:
+
+```powershell
+dotnet ef database update `
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data `
+  --startup-project backend\DynamicEmployeeApi\EmployeeApi `
+  --context EmployeeDbContext
+```
+
+### Add A Migration
+
+```powershell
+dotnet ef migrations add MigrationName `
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data `
+  --startup-project backend\DynamicEmployeeApi\EmployeeApi `
+  --context EmployeeDbContext
+```
+
+Then apply it:
+
+```powershell
+dotnet ef database update `
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data `
+  --startup-project backend\DynamicEmployeeApi\EmployeeApi `
+  --context EmployeeDbContext
+```
+
+### Run The API
+
+```powershell
+dotnet run --project backend\DynamicEmployeeApi\EmployeeApi\EmployeeApi.csproj
+```
+
+Launch settings configure:
+
+```text
+http://localhost:5154
+https://localhost:7043
+```
+
+The frontend expects the API at `http://localhost:5154` unless you override the frontend environment configuration.
+
+### Run Backend Tests
+
+Run all backend tests:
+
+```powershell
+dotnet test backend\DynamicEmployeeApi\DynamicEmployeeApi.sln
+```
+
+Run only the Application unit tests:
+
+```powershell
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj
+```
+
+Run only the Data unit tests:
+
+```powershell
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj
+```
+
+Collect backend coverage:
+
+```powershell
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\application --collect "XPlat Code Coverage"
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\data --collect "XPlat Code Coverage"
+```
+
+Backend unit tests use xUnit, Moq, AutoFixture.AutoMoq, and FluentAssertions. The current test style freezes mocks for important collaborators, lets AutoFixture construct the service under test, uses explicit Arrange/Act/Assert comments, and uses fluent assertions for readable expectations.
+
+Coverage notes and the current backend baseline live in `docs/test-coverage.md`.
 
 ## Frontend
 
-### First-time setup
+### Install
 
-```bash
+```powershell
 cd frontend
-cp .env.example .env
 npm install
 ```
 
-Edit `.env` if your backend runs on a port other than `5000`:
+### Configure
 
+Create `frontend/.env` if you need to override the API URL:
+
+```text
+VITE_API_BASE_URL=http://localhost:5154/api
 ```
-VITE_API_BASE_URL=http://localhost:5000/api
-```
 
-### Run the dev server
+### Run
 
-```bash
+```powershell
 npm run dev
 ```
 
-App opens at `http://localhost:5173`.
+Vite serves the app at:
 
-### Build for production
-
-```bash
-npm run build        # outputs to frontend/dist/
-npm run preview      # serves the production build locally
+```text
+http://localhost:5173
 ```
 
----
+### Build
 
-## Running both together
-
-Open two terminals from the repo root:
-
-```bash
-# Terminal 1 — API
-cd backend && dotnet run --project DynamicHR.API
-
-# Terminal 2 — Frontend
-cd frontend && npm run dev
+```powershell
+npm run build
 ```
 
----
+### Lint
 
-## Project structure
-
-```
-dynamic-hr-in-ef-core/
-  backend/
-    DynamicHR.Core/         Entities, enums, DTOs, interfaces, services (packageable)
-      Entities/             UserType, FieldDefinition, User
-      Enums/                FieldType
-      DTOs/                 Response DTOs and request models
-      Interfaces/           IUserTypeService, IUserService, IUserTypeRepository, IUserRepository
-      Services/             UserTypeService, UserService
-    DynamicHR.Data/         EF Core DbContext, configurations, repositories (packageable)
-      Configurations/       Fluent API entity configs
-      Migrations/           EF Core migration history
-      Repositories/         UserTypeRepository, UserRepository
-      Extensions/           AddDynamicHRData() DI extension
-    DynamicHR.API/          ASP.NET Core host — not packageable
-      Controllers/          UserTypesController, UsersController
-      Program.cs            DI wiring, middleware, CORS, auto-migrate
-      appsettings.json      Connection string, CORS origins
-    DynamicHR.sln
-  frontend/                 Vite + React + TypeScript SPA
-    src/
-      api/                  Typed fetch wrappers (userTypes, users)
-      components/           DynamicForm, DynamicSearch, FieldEditor
-      lib/                  queryClient, cn utility
-      pages/                UserTypesPage, AddUserPage, SearchUsersPage, ViewUserPage
-      types/                schema.ts (UserType, FieldDefinition), records.ts (User)
-    .env.example            Copy to .env and set VITE_API_BASE_URL
-  SETUP.md                  This file
+```powershell
+npm run lint
 ```
 
----
+## Running Both Apps
 
-## Versioning plan
+Open two terminals from the repository root.
 
-| Version | Scope |
-|---|---|
-| v1 | User type schema editor, create user, search users, view user (read-only) |
-| v2 | Edit user records |
-| v3 | User type inheritance (`parentTypeId`) |
+Terminal 1:
+
+```powershell
+dotnet run --project backend\DynamicEmployeeApi\EmployeeApi\EmployeeApi.csproj
+```
+
+Terminal 2:
+
+```powershell
+cd frontend
+npm run dev
+```
