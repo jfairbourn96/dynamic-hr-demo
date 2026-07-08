@@ -131,7 +131,22 @@ Run only the Application unit tests:
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj
 ```
 
+Run only the Data unit tests:
+
+```powershell
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj
+```
+
+Collect backend coverage:
+
+```powershell
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\application --collect "XPlat Code Coverage"
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\data --collect "XPlat Code Coverage"
+```
+
 Backend unit tests use xUnit, Moq, AutoFixture.AutoMoq, and FluentAssertions. The current test style freezes mocks for important collaborators, lets AutoFixture construct the service under test, uses explicit Arrange/Act/Assert comments, and uses fluent assertions for readable expectations.
+
+Coverage notes and the current backend baseline live in `docs/test-coverage.md`.
 
 ## Frontend
 

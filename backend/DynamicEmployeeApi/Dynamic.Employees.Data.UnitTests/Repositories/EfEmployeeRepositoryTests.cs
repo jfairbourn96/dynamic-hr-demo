@@ -1,6 +1,8 @@
 using System.Text.Json.Nodes;
 using Dynamic.Employees.Data.Repositories;
+using Dynamic.Employees.Application.Models;
 using Dynamic.Employees.Domain.Models;
+using Dynamic.Json.Search;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.EntityFrameworkCore;
@@ -107,6 +109,135 @@ public class EfEmployeeRepositoryTests
             updated.Should().BeTrue();
             persisted.FieldValues["movieVersion"]!.GetValue<string>().Should().Be("band-together-2023");
             persisted.UpdatedDate.Should().BeAfter(originalUpdatedDate);
+        }
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenNoFiltersAreProvided_ReturnsRequestedPageAndTotalCount()
+    {
+        // Arrange
+        await using EmployeeDbContext context = CreateContext();
+        EmployeeType employeeType = CreateEmployeeType();
+        Employee first = CreateEmployee(employeeType.Id, "Poppy");
+        Employee second = CreateEmployee(employeeType.Id, "Branch");
+        Employee third = CreateEmployee(employeeType.Id, "Viva");
+        context.EmployeeTypes.Add(employeeType);
+        context.Employee.AddRange(first, second, third);
+        await context.SaveChangesAsync();
+        EfEmployeeRepository repository = new(context);
+
+        EmployeeSearchCriteria criteria = new(
+            EmployeeTypeId: null,
+            TextFilters: [],
+            Email: null,
+            HireDateStart: null,
+            HireDateEnd: null,
+            DynamicFilters: [],
+            PageNumber: 2,
+            PageSize: 2);
+
+        // Act
+        EmployeeSearchResult result = await repository.SearchAsync(criteria);
+
+        // Assert
+        using (new AssertionScope())
+        {
+            result.TotalCount.Should().Be(3);
+            result.PageNumber.Should().Be(2);
+            result.PageSize.Should().Be(2);
+            result.Items.Should().ContainSingle();
+            result.Items.Single().EmployeeType.Should().NotBeNull();
+            result.Items.Single().EmployeeType!.Fields.Should().Contain(field => field.Name == "movieVersion");
+            result.Items.Single().FieldValues["movieVersion"]!.GetValue<string>().Should().Be("trolls-2016");
+        }
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenCoreFiltersAreProvided_ReturnsMatchingEmployees()
+    {
+        // Arrange
+        await using EmployeeDbContext context = CreateContext();
+        EmployeeType employeeType = CreateEmployeeType();
+        Employee poppy = CreateEmployee(employeeType.Id, "Poppy");
+        poppy.LastName = "Popstar";
+        poppy.Email = "poppy@trolls.example";
+        poppy.HireDate = new DateOnly(2016, 11, 4);
+
+        Employee branch = CreateEmployee(employeeType.Id, "Branch");
+        branch.LastName = "Survivalist";
+        branch.Email = "branch@trolls.example";
+        branch.HireDate = new DateOnly(2023, 11, 17);
+
+        context.EmployeeTypes.Add(employeeType);
+        context.Employee.AddRange(poppy, branch);
+        await context.SaveChangesAsync();
+        EfEmployeeRepository repository = new(context);
+
+        EmployeeSearchCriteria criteria = new(
+            employeeType.Id,
+            [new EmployeeTextSearchFilter("firstName", SearchOperator.Exact, "Poppy")],
+            "poppy@",
+            new DateOnly(2016, 1, 1),
+            new DateOnly(2016, 12, 31),
+            [],
+            PageNumber: 1,
+            PageSize: 10);
+
+        // Act
+        EmployeeSearchResult result = await repository.SearchAsync(criteria);
+
+        // Assert
+        using (new AssertionScope())
+        {
+            result.TotalCount.Should().Be(1);
+            result.Items.Should().ContainSingle();
+            result.Items.Single().Id.Should().Be(poppy.Id);
+            result.Items.Single().FirstName.Should().Be("Poppy");
+        }
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenCoreTextFiltersUseStartsWithAndContains_ReturnsMatchingEmployees()
+    {
+        // Arrange
+        await using EmployeeDbContext context = CreateContext();
+        EmployeeType employeeType = CreateEmployeeType();
+        Employee poppy = CreateEmployee(employeeType.Id, "Poppy");
+        poppy.LastName = "Popstar";
+        poppy.Department = "Pop Village";
+
+        Employee branch = CreateEmployee(employeeType.Id, "Branch");
+        branch.LastName = "Survivalist";
+        branch.Department = "Lonesome Flats";
+
+        context.EmployeeTypes.Add(employeeType);
+        context.Employee.AddRange(poppy, branch);
+        await context.SaveChangesAsync();
+        EfEmployeeRepository repository = new(context);
+
+        EmployeeSearchCriteria criteria = new(
+            EmployeeTypeId: null,
+            TextFilters:
+            [
+                new EmployeeTextSearchFilter("lastName", SearchOperator.StartsWith, "Pop"),
+                new EmployeeTextSearchFilter("department", SearchOperator.Contains, "Village"),
+            ],
+            Email: null,
+            HireDateStart: null,
+            HireDateEnd: null,
+            DynamicFilters: [],
+            PageNumber: 1,
+            PageSize: 10);
+
+        // Act
+        EmployeeSearchResult result = await repository.SearchAsync(criteria);
+
+        // Assert
+        using (new AssertionScope())
+        {
+            result.TotalCount.Should().Be(1);
+            result.Items.Should().ContainSingle();
+            result.Items.Single().Id.Should().Be(poppy.Id);
         }
     }
 

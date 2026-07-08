@@ -52,13 +52,13 @@ Write methods persist internally, so the application services do not call `SaveC
 
 ## Dynamic.Json Dependencies
 
-For local development, the backend references sibling projects from `../dynamic-json-efcore` directly:
+The backend consumes the published Dynamic.Json preview packages:
 
 - `Dynamic.Json.Search` in Application for provider-neutral dynamic search parsing and filter models.
 - `Dynamic.Json.EfCore.SqlServer` in Data for SQL Server JSON query translation.
 - `Dynamic.Json.AspNetCore` in EmployeeApi for ASP.NET Core service registration/adapters.
 
-Once packages are published, these project references can be replaced with NuGet package references.
+When developing Dynamic.Json and Dynamic HR together, these package references can be temporarily swapped for sibling project references.
 
 ## Migrations
 
@@ -95,3 +95,22 @@ npm run dev
 ```
 
 The API is configured for SQL Server LocalDB by default in `EmployeeApi/appsettings.json`.
+
+## Tests
+
+Backend unit tests:
+
+```powershell
+dotnet test backend\DynamicEmployeeApi\DynamicEmployeeApi.sln
+```
+
+Coverage:
+
+```powershell
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\application --collect "XPlat Code Coverage"
+dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\data --collect "XPlat Code Coverage"
+```
+
+CI generates an HTML/Cobertura coverage report from the backend unit test suites, publishes the Markdown summary to the GitHub Actions job summary, and uploads the full report as a `coverage-report` artifact.
+
+Coverage notes for the backend live in `docs/test-coverage.md`.

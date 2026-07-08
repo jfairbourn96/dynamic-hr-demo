@@ -345,6 +345,97 @@ public class EmployeeServiceSearchTests
     }
 
     [Fact]
+    public async Task SearchAsync_WhenEmployeeTypeHasAllFieldTypes_MapsFieldsForDynamicParser()
+    {
+        // Arrange
+        Guid employeeTypeId = Guid.NewGuid();
+        IEnumerable<DynamicSearchField>? capturedDynamicSearchFields = null;
+        EmployeeSearchResult expectedResult = new([], 0, 1, 25);
+
+        _employeeTypeReader
+            .Setup(reader => reader.GetByIdAsync(employeeTypeId))
+            .ReturnsAsync(new EmployeeType
+            {
+                Id = employeeTypeId,
+                Name = "Trolls Tour Performer",
+                Fields =
+                [
+                    new EmployeeTypeField { Name = "stageName", FieldType = FieldType.Address },
+                    new EmployeeTypeField { Name = "tourStart", FieldType = FieldType.Date },
+                    new EmployeeTypeField { Name = "isHeadliner", FieldType = FieldType.Boolean },
+                ],
+            });
+
+        _dynamicSearchQueryParser
+            .Setup(parser => parser.Parse(
+                It.IsAny<IReadOnlyDictionary<string, string?>>(),
+                It.IsAny<IEnumerable<DynamicSearchField>>(),
+                It.IsAny<DynamicSearchQueryParserOptions?>()))
+            .Callback<IReadOnlyDictionary<string, string?>, IEnumerable<DynamicSearchField>, DynamicSearchQueryParserOptions?>(
+                (_, fields, _) => capturedDynamicSearchFields = fields.ToList())
+            .Returns(new DynamicSearchFilterParseResult([], []));
+
+        SetupSuccessfulSearch(expectedResult, _ => { });
+        EmployeeService service = _fixture.Create<EmployeeService>();
+
+        // Act
+        EmployeeSearchServiceResult result = await service.SearchAsync(
+            employeeTypeId,
+            pageNumber: 1,
+            pageSize: 25,
+            parameters: new Dictionary<string, string?>());
+
+        // Assert
+        using (new AssertionScope())
+        {
+            result.IsValid.Should().BeTrue();
+            capturedDynamicSearchFields.Should().BeEquivalentTo(
+            [
+                new DynamicSearchField("stageName", DynamicSearchFieldType.Text),
+                new DynamicSearchField("tourStart", DynamicSearchFieldType.Date),
+                new DynamicSearchField("isHeadliner", DynamicSearchFieldType.Boolean),
+            ]);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DynamicParseErrors))]
+    public async Task SearchAsync_WhenDynamicParserReturnsError_FormatsValidationError(
+        DynamicSearchParseError parseError,
+        string expectedMessage)
+    {
+        // Arrange
+        Guid employeeTypeId = Guid.NewGuid();
+        EmployeeService service = _fixture.Create<EmployeeService>();
+
+        _employeeTypeReader
+            .Setup(reader => reader.GetByIdAsync(employeeTypeId))
+            .ReturnsAsync(CreateTrollsTourPerformer(employeeTypeId));
+
+        _dynamicSearchQueryParser
+            .Setup(parser => parser.Parse(
+                It.IsAny<IReadOnlyDictionary<string, string?>>(),
+                It.IsAny<IEnumerable<DynamicSearchField>>(),
+                It.IsAny<DynamicSearchQueryParserOptions?>()))
+            .Returns(new DynamicSearchFilterParseResult([], [parseError]));
+
+        // Act
+        EmployeeSearchServiceResult result = await service.SearchAsync(
+            employeeTypeId,
+            pageNumber: 1,
+            pageSize: 25,
+            parameters: new Dictionary<string, string?> { [parseError.QueryKey] = parseError.Value });
+
+        // Assert
+        using (new AssertionScope())
+        {
+            result.IsValid.Should().BeFalse();
+            result.SearchResult.Should().BeNull();
+            result.Errors.Should().Equal([expectedMessage]);
+        }
+    }
+
+    [Fact]
     public async Task SearchAsync_WhenCoreDateFilterIsInvalid_ReturnsValidationError()
     {
         // Arrange
@@ -380,6 +471,86 @@ public class EmployeeServiceSearchTests
             .Setup(repository => repository.SearchAsync(It.IsAny<EmployeeSearchCriteria>()))
             .Callback(captureCriteria)
             .ReturnsAsync(result);
+    }
+
+    public static IEnumerable<object[]> DynamicParseErrors()
+    {
+        yield return
+        [
+            new DynamicSearchParseError(
+                DynamicSearchParseErrorCode.UnsupportedSearchParameter,
+                "unsupported",
+                "unsupported",
+                SearchOperator.Contains,
+                "value"),
+            "Unsupported search parameter 'unsupported'.",
+        ];
+
+        yield return
+        [
+            new DynamicSearchParseError(
+                DynamicSearchParseErrorCode.InvalidFieldName,
+                "bad-field_contains",
+                "bad-field",
+                SearchOperator.Contains,
+                "value"),
+            "Dynamic field 'bad-field' is not a valid field name.",
+        ];
+
+        yield return
+        [
+            new DynamicSearchParseError(
+                DynamicSearchParseErrorCode.InvalidOperatorForFieldType,
+                "numberOfSongs_contains",
+                "numberOfSongs",
+                SearchOperator.Contains,
+                "3"),
+            "Search operator 'Contains' is not valid for dynamic field 'numberOfSongs'.",
+        ];
+
+        yield return
+        [
+            new DynamicSearchParseError(
+                DynamicSearchParseErrorCode.InvalidNumberValue,
+                "numberOfSongs_gte",
+                "numberOfSongs",
+                SearchOperator.GreaterThanOrEqual,
+                "many"),
+            "Dynamic field 'numberOfSongs' must be a valid number.",
+        ];
+
+        yield return
+        [
+            new DynamicSearchParseError(
+                DynamicSearchParseErrorCode.InvalidDateValue,
+                "tourStart_startDate",
+                "tourStart",
+                SearchOperator.StartDate,
+                "soon"),
+            "Dynamic field 'tourStart' must be a valid date.",
+        ];
+
+        yield return
+        [
+            new DynamicSearchParseError(
+                DynamicSearchParseErrorCode.InvalidBooleanValue,
+                "isHeadliner",
+                "isHeadliner",
+                SearchOperator.Exact,
+                "sometimes"),
+            "Dynamic field 'isHeadliner' must be true or false.",
+        ];
+
+        yield return
+        [
+            new DynamicSearchParseError(
+                DynamicSearchParseErrorCode.InvalidSelectOptionValue,
+                "movieVersion",
+                "movieVersion",
+                SearchOperator.Exact,
+                "direct-to-video"),
+            "Dynamic field 'movieVersion' has an invalid option value.",
+        ];
     }
 
     private static EmployeeType CreateTrollsTourPerformer(Guid employeeTypeId)

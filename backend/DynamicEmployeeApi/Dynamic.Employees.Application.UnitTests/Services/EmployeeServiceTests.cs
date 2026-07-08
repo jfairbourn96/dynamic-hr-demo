@@ -79,6 +79,30 @@ public class EmployeeServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_WhenEndDateIsProvided_UsesEndDate()
+    {
+        // Arrange
+        EmployeeService service = _fixture.Create<EmployeeService>();
+        DateOnly endDate = new(2023, 11, 17);
+
+        CreateEmployeeCommand command = new(
+            "Viva",
+            "Troll",
+            "viva@trolls.example",
+            new DateOnly(2020, 4, 10),
+            endDate,
+            "Harmony Hub",
+            Guid.NewGuid(),
+            []);
+
+        // Act
+        Employee employee = await service.CreateAsync(command);
+
+        // Assert
+        employee.EndDate.Should().Be(endDate);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_WhenEmployeeExists_ReturnsReaderResult()
     {
         // Arrange

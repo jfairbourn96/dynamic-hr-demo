@@ -91,7 +91,7 @@ const api = {
 ```
 
 **Features:**
-- Base URL: `VITE_API_BASE_URL` environment variable or `http://localhost:5000/api`
+- Base URL: `VITE_API_BASE_URL` environment variable or `http://localhost:5154/api`
 - Automatic JSON serialization/deserialization
 - Generic typing for type-safe responses
 - Error handling with meaningful error messages
@@ -262,7 +262,7 @@ npm run preview  # Preview production build locally before deployment
 
 Create `.env.local` or `.env.development.local` for local overrides:
 ```env
-VITE_API_BASE_URL=http://localhost:5000/api
+VITE_API_BASE_URL=http://localhost:5154/api
 ```
 
 ### Hot Module Replacement (HMR)

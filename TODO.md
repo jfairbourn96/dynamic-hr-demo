@@ -2,37 +2,37 @@
 
 ## Docker-Backed Integration Tests
 
-Add integration tests for provider-specific `Dynamic.Json.EfCore.*` behavior using Docker/Testcontainers.
+Add integration tests for provider-specific Dynamic HR search behavior using Docker/Testcontainers.
 
 ### SQL Server
 
-- Build out the existing `Dynamic.Json.EfCore.IntegrationTests` project.
+- Add a Dynamic HR integration test project under `backend/DynamicEmployeeApi`.
 - Use Testcontainers for .NET to start a SQL Server container during test setup.
-- Configure EF Core with the container-generated SQL Server connection string.
-- Create a small test table with a `JsonObject` property configured through `HasJsonConversion()`.
-- Execute real queries against SQL Server to verify:
-  - `DynamicJsonFunctions.Value`
-  - `DynamicJsonFunctions.ValueDecimal`
-  - `DynamicJsonFunctions.ValueDate`
-  - filtering behavior
+- Configure `EmployeeDbContext` with the container-generated SQL Server connection string.
+- Seed employee types and employees with JSON-backed field values.
+- Execute real employee search queries against SQL Server to verify:
+  - dynamic text filters
+  - dynamic number filters
+  - dynamic date filters
+  - dynamic boolean filters
+  - dynamic select filters
   - null or missing JSON property behavior
   - invalid decimal/date conversion behavior
-  - `JsonObjectComparisonMode.Semantic`
-  - `JsonObjectComparisonMode.Serialized`
 
 ### Provider Translation Tests
 
-- Reintroduce SQL Server translation tests outside the unit test project.
+- Add SQL Server translation tests outside the unit test projects.
 - Use `ToQueryString()` to verify generated SQL for:
   - `JSON_VALUE`
   - `TRY_CONVERT(decimal(18, 4), JSON_VALUE(...))`
   - `TRY_CONVERT(date, JSON_VALUE(...))`
   - missing `UseDynamicJsonSqlServer()` registration behavior
 
-### Future Providers
+## Test Coverage
 
-- Add equivalent Docker-backed tests when PostgreSQL support is introduced.
-- Add equivalent integration tests when Newtonsoft/JObject support is introduced.
+- Add focused API/controller tests for request mapping, status codes, and validation errors.
+- Fold SQL Server integration coverage into the default CI report once the provider tests are stable.
+- Keep `docs/test-coverage.md` updated when service, repository, or API behavior changes.
 
 ## API Documentation
 
