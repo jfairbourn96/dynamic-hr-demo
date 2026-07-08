@@ -41,6 +41,7 @@ Dynamic.Employees.Application            Use-case services, commands, search mod
 Dynamic.Employees.Data                   EF Core DbContext, migrations, configurations, and repositories
 EmployeeApi                              ASP.NET Core controllers, DTOs, mapping, and composition
 Dynamic.Employees.Application.UnitTests  Application unit tests
+Dynamic.Employees.Data.UnitTests         EF repository unit tests
 ```
 
 The HR projects consume the published Dynamic.Json packages:
@@ -130,7 +131,7 @@ Run only the Application unit tests:
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj
 ```
 
-The first backend test file is `EmployeeServiceSearchTests`, which uses xUnit, Moq, AutoFixture.AutoMoq, and FluentAssertions. The current test style freezes mocks for important collaborators, lets AutoFixture construct the service under test, and uses fluent assertions for readable expectations.
+Backend unit tests use xUnit, Moq, AutoFixture.AutoMoq, and FluentAssertions. The current test style freezes mocks for important collaborators, lets AutoFixture construct the service under test, uses explicit Arrange/Act/Assert comments, and uses fluent assertions for readable expectations.
 
 ## Frontend
 

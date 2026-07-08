@@ -261,6 +261,90 @@ public class EmployeeServiceSearchTests
     }
 
     [Fact]
+    public async Task SearchAsync_WhenEmployeeTypeDoesNotExist_ReturnsValidationError()
+    {
+        // Arrange
+        Guid employeeTypeId = Guid.NewGuid();
+        EmployeeService service = _fixture.Create<EmployeeService>();
+
+        _employeeTypeReader
+            .Setup(reader => reader.GetByIdAsync(employeeTypeId))
+            .ReturnsAsync((EmployeeType?)null);
+
+        // Act
+        EmployeeSearchServiceResult result = await service.SearchAsync(
+            employeeTypeId,
+            pageNumber: 1,
+            pageSize: 25,
+            parameters: new Dictionary<string, string?>());
+
+        // Assert
+        using (new AssertionScope())
+        {
+            result.IsValid.Should().BeFalse();
+            result.SearchResult.Should().BeNull();
+            result.Errors.Should().Equal(["Employee type was not found."]);
+        }
+
+        _employeeSearchRepository.Verify(
+            repository => repository.SearchAsync(It.IsAny<EmployeeSearchCriteria>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenDynamicParserReturnsErrors_ReturnsFormattedValidationErrors()
+    {
+        // Arrange
+        Guid employeeTypeId = Guid.NewGuid();
+        EmployeeService service = _fixture.Create<EmployeeService>();
+
+        _employeeTypeReader
+            .Setup(reader => reader.GetByIdAsync(employeeTypeId))
+            .ReturnsAsync(CreateTrollsTourPerformer(employeeTypeId));
+
+        _dynamicSearchQueryParser
+            .Setup(parser => parser.Parse(
+                It.IsAny<IReadOnlyDictionary<string, string?>>(),
+                It.IsAny<IEnumerable<DynamicSearchField>>(),
+                It.IsAny<DynamicSearchQueryParserOptions?>()))
+            .Returns(new DynamicSearchFilterParseResult(
+                [],
+                [
+                    new DynamicSearchParseError(
+                        DynamicSearchParseErrorCode.UnknownField,
+                        "soloAct_contains",
+                        "soloAct",
+                        SearchOperator.Contains,
+                        "branch"),
+                ]));
+
+        Dictionary<string, string?> parameters = new()
+        {
+            ["soloAct_contains"] = "branch",
+        };
+
+        // Act
+        EmployeeSearchServiceResult result = await service.SearchAsync(
+            employeeTypeId,
+            pageNumber: 1,
+            pageSize: 25,
+            parameters);
+
+        // Assert
+        using (new AssertionScope())
+        {
+            result.IsValid.Should().BeFalse();
+            result.SearchResult.Should().BeNull();
+            result.Errors.Should().Equal(
+                ["Dynamic field 'soloAct' does not exist on employee type 'Trolls Tour Performer'."]);
+        }
+
+        _employeeSearchRepository.Verify(
+            repository => repository.SearchAsync(It.IsAny<EmployeeSearchCriteria>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task SearchAsync_WhenCoreDateFilterIsInvalid_ReturnsValidationError()
     {
         // Arrange
