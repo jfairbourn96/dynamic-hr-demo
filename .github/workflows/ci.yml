@@ -7,8 +7,8 @@ on:
       - main
 
 jobs:
-  build-test:
-    name: Build and test
+  backend:
+    name: Backend build, test, and coverage
     runs-on: windows-latest
 
     defaults:
@@ -54,3 +54,58 @@ jobs:
         with:
           name: coverage-report
           path: artifacts/coverage/report
+
+  backend-sqlserver-integration:
+    name: Backend SQL Server integration tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend/DynamicEmployeeApi
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore DynamicEmployeeApi.sln
+
+      - name: Build integration tests
+        run: dotnet build Dynamic.Employees.Data.IntegrationTests/Dynamic.Employees.Data.IntegrationTests.csproj --configuration Release --no-restore
+
+      - name: Run SQL Server integration tests
+        run: dotnet test Dynamic.Employees.Data.IntegrationTests/Dynamic.Employees.Data.IntegrationTests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
+
+  frontend:
+    name: Frontend lint and build
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+

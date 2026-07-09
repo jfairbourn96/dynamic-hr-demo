@@ -8,7 +8,7 @@ Last verified with:
 
 ```text
 dotnet test backend\DynamicEmployeeApi\DynamicEmployeeApi.sln --no-restore
-Passed: 40, Failed: 0, Skipped: 0
+Passed: 43, Failed: 0, Skipped: 0
 ```
 
 Coverage collection:
@@ -40,7 +40,7 @@ Data unit tests branch coverage: 23.65%
 | `Dynamic.Employees.Data` | Employee repository reads/writes/search | Mostly covered | EF-backed create, get, update, field value behavior, paging, and core search filters are covered with the in-memory provider. Dynamic JSON translation belongs in provider tests. |
 | `Dynamic.Employees.Data` | Employee type repository reads/writes | Covered | EF-backed create and read behavior are covered with the in-memory provider. |
 | `Dynamic.Employees.Data` | Data service registration | Covered | DbContext, repository, and repository-port registrations are covered. |
-| `Dynamic.Employees.Data` | SQL Server JSON translation | Planned integration/provider coverage | Unit tests use the EF in-memory provider; SQL translation needs provider-specific tests. |
+| `Dynamic.Employees.Data` | SQL Server JSON persistence and search | Covered by integration tests | Testcontainers starts SQL Server and verifies owned JSON fields, JSON field values, and provider-backed dynamic search filters. |
 | `EmployeeApi` | Controllers and request mappings | Planned API coverage | Add focused controller or minimal API integration tests when API behavior stabilizes. |
 
 ## Future Coverage Triggers
