@@ -132,19 +132,19 @@ export function FieldEditor({ field, index, onChange, onRemove }: FieldEditorPro
                 <input
                   type="text"
                   className={inputClass}
-                  placeholder="admin"
-                  value={option.value}
+                  placeholder="Administrator"
+                  value={option.label}
                   onChange={(e) =>
-                    handleOptionChange(optionIndex, 'value', e.target.value)
+                    handleOptionChange(optionIndex, 'label', e.target.value)
                   }
                 />
                 <input
                   type="text"
                   className={inputClass}
-                  placeholder="Administrator"
-                  value={option.label}
+                  placeholder="admin"
+                  value={option.value}
                   onChange={(e) =>
-                    handleOptionChange(optionIndex, 'label', e.target.value)
+                    handleOptionChange(optionIndex, 'value', e.target.value)
                   }
                 />
                 <button

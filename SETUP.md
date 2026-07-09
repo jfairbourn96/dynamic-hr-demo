@@ -42,14 +42,15 @@ Dynamic.Employees.Data                   EF Core DbContext, migrations, configur
 EmployeeApi                              ASP.NET Core controllers, DTOs, mapping, and composition
 Dynamic.Employees.Application.UnitTests  Application unit tests
 Dynamic.Employees.Data.UnitTests         EF repository unit tests
+Dynamic.Employees.Data.IntegrationTests  SQL Server integration tests with Testcontainers
 ```
 
 The HR projects consume the published Dynamic.Json packages:
 
 ```text
-Dynamic.Json.Search              0.2.0-preview.1
-Dynamic.Json.AspNetCore          0.2.0-preview.1
-Dynamic.Json.EfCore.SqlServer    0.2.0-preview.1
+Dynamic.Json.Search              0.2.1-preview.1
+Dynamic.Json.AspNetCore          0.2.1-preview.1
+Dynamic.Json.EfCore.SqlServer    0.2.1-preview.1
 ```
 
 ### Restore And Build
@@ -159,7 +160,7 @@ npm install
 
 ### Configure
 
-Create `frontend/.env` if you need to override the API URL:
+Copy `frontend/.env.example` to `frontend/.env` if you need to override the API URL:
 
 ```text
 VITE_API_BASE_URL=http://localhost:5154/api
