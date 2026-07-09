@@ -111,6 +111,6 @@ dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\D
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\data --collect "XPlat Code Coverage"
 ```
 
-CI generates an HTML/Cobertura coverage report from the backend unit test suites, publishes the Markdown summary to the GitHub Actions job summary, and uploads the full report as a `coverage-report` artifact.
+CI generates an HTML/Cobertura coverage report from the backend unit test suites, publishes the Markdown summary to the GitHub Actions job summary, uploads the full report as a `coverage-report` artifact, and runs frontend lint/build checks.
 
 Coverage notes for the backend live in `docs/test-coverage.md`.

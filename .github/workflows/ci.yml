@@ -7,8 +7,8 @@ on:
       - main
 
 jobs:
-  build-test:
-    name: Build and test
+  backend:
+    name: Backend build, test, and coverage
     runs-on: windows-latest
 
     defaults:
@@ -54,3 +54,31 @@ jobs:
         with:
           name: coverage-report
           path: artifacts/coverage/report
+
+  frontend:
+    name: Frontend lint and build
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
