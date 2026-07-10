@@ -25,6 +25,26 @@ git clone https://github.com/jfairbourn96/dynamic-hr-demo.git
 cd dynamic-hr-demo
 ```
 
+## Run Everything With Docker
+
+If Docker Desktop or Docker Engine is installed, this is the quickest way to run the complete stack:
+
+```powershell
+docker compose up --build
+```
+
+This starts SQL Server, the ASP.NET Core API, a one-shot seed container, and the React frontend. EF Core migrations are applied automatically by the API container after SQL Server passes its health check. The seed container waits for the migration-created `EmployeeType` table, then loads the professional demo employee types and employees only when the database is empty.
+
+Open the application at `http://localhost:5173`; the API is exposed at `http://localhost:5154`.
+
+Stop the stack with:
+
+```powershell
+docker compose down
+```
+
+Add `-v` to also remove the persisted SQL Server data volume. The next `docker compose up --build` then creates and seeds a fresh demo database. Compose uses a development-only default password; set `MSSQL_SA_PASSWORD` in a root `.env` file to override it.
+
 ## Backend
 
 The backend solution lives at:
@@ -40,6 +60,7 @@ Dynamic.Employees.Domain                 Domain models and enums
 Dynamic.Employees.Application            Use-case services, commands, search models, and repository ports
 Dynamic.Employees.Data                   EF Core DbContext, migrations, configurations, and repositories
 EmployeeApi                              ASP.NET Core controllers, DTOs, mapping, and composition
+EmployeeApi.UnitTests                    API controller and mapping unit tests
 Dynamic.Employees.Application.UnitTests  Application unit tests
 Dynamic.Employees.Data.UnitTests         EF repository unit tests
 Dynamic.Employees.Data.IntegrationTests  SQL Server integration tests with Testcontainers
@@ -70,7 +91,7 @@ The default connection string in `backend/DynamicEmployeeApi/EmployeeApi/appsett
 "DefaultConnection": "Server=(localdb)\\.\\DYNAMICHRPUBLIC;Database=master;Trusted_Connection=True;"
 ```
 
-To use SQL Server Developer Edition, SQL Server Express, or Docker SQL Server, update that connection string before applying migrations.
+To use SQL Server Developer Edition, SQL Server Express, or Docker SQL Server, update that connection string before applying migrations. The Compose API container supplies its own connection string and sets `Database__ApplyMigrationsOnStartup=true`, so no manual migration command is needed for the Docker workflow.
 
 ### Apply Migrations
 

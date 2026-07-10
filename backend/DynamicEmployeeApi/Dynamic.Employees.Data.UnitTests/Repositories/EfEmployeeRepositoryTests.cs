@@ -65,6 +65,48 @@ public class EfEmployeeRepositoryTests
     }
 
     [Fact]
+    public async Task GetByIdAsync_WhenEmployeeDoesNotExist_ReturnsNull()
+    {
+        await using EmployeeDbContext context = CreateContext();
+        EfEmployeeRepository repository = new(context);
+
+        Employee? result = await repository.GetByIdAsync(Guid.NewGuid());
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenDetachedEmployeeIsProvided_PersistsOnlyEmployeeChanges()
+    {
+        // Arrange
+        await using EmployeeDbContext context = CreateContext();
+        EmployeeType employeeType = CreateEmployeeType();
+        Employee employee = CreateEmployee(employeeType.Id, "Poppy");
+        context.EmployeeTypes.Add(employeeType);
+        context.Employees.Add(employee);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        employee.FirstName = "Viva";
+        employee.FieldValues["movieVersion"] = "band-together-2023";
+        EfEmployeeRepository repository = new(context);
+
+        // Act
+        await repository.UpdateAsync(employee);
+        context.ChangeTracker.Clear();
+
+        // Assert
+        Employee persisted = await context.Employees.SingleAsync();
+        using (new AssertionScope())
+        {
+            persisted.FirstName.Should().Be("Viva");
+            persisted.FieldValues["movieVersion"]!.GetValue<string>()
+                .Should().Be("band-together-2023");
+            (await context.EmployeeTypes.SingleAsync()).Name.Should().Be("Trolls Tour Performer");
+        }
+    }
+
+    [Fact]
     public async Task SearchAsync_WhenNoFiltersAreProvided_ReturnsRequestedPageAndTotalCount()
     {
         // Arrange
@@ -191,6 +233,29 @@ public class EfEmployeeRepositoryTests
             result.Items.Should().ContainSingle();
             result.Items.Single().Id.Should().Be(poppy.Id);
         }
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenEmployeeTypeIsProvided_ExcludesOtherEmployeeTypes()
+    {
+        // Arrange
+        await using EmployeeDbContext context = CreateContext();
+        EmployeeType requestedType = CreateEmployeeType();
+        EmployeeType otherType = CreateEmployeeType();
+        otherType.Name = "Other Type";
+        Employee expected = CreateEmployee(requestedType.Id, "Poppy");
+        context.EmployeeTypes.AddRange(requestedType, otherType);
+        context.Employees.AddRange(expected, CreateEmployee(otherType.Id, "Branch"));
+        await context.SaveChangesAsync();
+        EfEmployeeRepository repository = new(context);
+        EmployeeSearchCriteria criteria = new(
+            requestedType.Id, [], null, null, null, [], PageNumber: 1, PageSize: 20);
+
+        // Act
+        EmployeeSearchResult result = await repository.SearchAsync(criteria);
+
+        // Assert
+        result.Items.Should().ContainSingle(item => item.Id == expected.Id);
     }
 
     private static EmployeeDbContext CreateContext()

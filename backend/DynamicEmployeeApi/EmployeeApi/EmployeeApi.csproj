@@ -11,4 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Dynamic.Json.AspNetCore" Version="0.2.1-preview.1" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="EmployeeApi.UnitTests" />
+  </ItemGroup>
 </Project>

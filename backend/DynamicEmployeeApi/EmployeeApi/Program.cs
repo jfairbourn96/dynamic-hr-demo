@@ -2,6 +2,8 @@ using Dynamic.Employees.Application.Extensions;
 using Dynamic.Employees.Data;
 using Dynamic.Employees.Data.Extensions;
 using Dynamic.Json.AspNetCore;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,13 @@ builder.Services.AddCors(options =>
 });
 
 WebApplication app = builder.Build();
+
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    using IServiceScope scope = app.Services.CreateScope();
+    EmployeeDbContext dbContext = scope.ServiceProvider.GetRequiredService<EmployeeDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
 
 app.UseHttpsRedirection();
 app.UseCors();

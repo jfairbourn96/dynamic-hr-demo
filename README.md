@@ -92,7 +92,21 @@ Rather than treating JSON columns as simple serialized blobs, this solution demo
 
 The goal is not simply to build another CRUD application, but to demonstrate the kinds of architectural challenges encountered when designing extensible enterprise software.
 
-## Quick Start
+## Run With Docker
+
+With Docker Desktop or Docker Engine installed, start the complete stack with one command:
+
+```powershell
+docker compose up --build
+```
+
+Compose starts SQL Server, applies EF Core migrations when the API starts, loads the professional demo data on a fresh database volume, serves the API, and builds the React frontend behind nginx. Open [http://localhost:5173](http://localhost:5173).
+
+The API is also available directly at `http://localhost:5154`. The seed container skips its scripts when employee types already exist, so it never overwrites a running demo database. Stop the stack with `docker compose down`; add `-v` to remove the persisted SQL Server data volume and seed a fresh database on the next start.
+
+For a non-default development SQL Server password, create a root `.env` file containing `MSSQL_SA_PASSWORD=your-strong-password` before starting Compose.
+
+## Quick Start Without Docker
 
 Prerequisites: .NET SDK 10.x, Node.js 20 or 22, npm 10.x, SQL Server LocalDB or another SQL Server instance, and Docker for integration tests.
 
@@ -137,6 +151,7 @@ backend/DynamicEmployeeApi/
   Dynamic.Employees.Application/  Use-case services, commands, search models, and repository ports
   Dynamic.Employees.Data/         EF Core DbContext, migrations, configurations, and repository implementations
   EmployeeApi/                    ASP.NET Core controllers, request/response DTOs, mapping, and composition
+  EmployeeApi.UnitTests/          API controller and mapping unit tests
 
 frontend/
   src/                            React UI for employee types, dynamic forms, and search
