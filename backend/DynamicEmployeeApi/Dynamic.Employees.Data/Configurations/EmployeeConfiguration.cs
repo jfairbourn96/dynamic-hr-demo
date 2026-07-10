@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Dynamic.Employees.Data.Configurations;
 
+/// <summary>
+/// Configures persistence for employee entities.
+/// </summary>
 public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
 {
     private const string FieldValuesColumnName = "FieldValuesJson";

@@ -1,15 +1,12 @@
-using System.Text.Json.Nodes;
-
 namespace EmployeeApi.Requests;
 
-public class CreateEmployeeRequest
+/// <summary>
+/// Represents the external HTTP contract for creating an employee.
+/// </summary>
+/// <remarks>
+/// This transport DTO is mapped to a create-specific application command before business logic
+/// is invoked, keeping API serialization concerns out of the application layer.
+/// </remarks>
+public class CreateEmployeeRequest : BaseEmployeeRequest
 {
-    public required string FirstName { get; set; } = string.Empty;
-    public required string LastName { get; set; } = string.Empty;
-    public required string Email { get; set; } = string.Empty;
-    public required DateOnly HireDate { get; set; }
-    public DateOnly? EndDate { get; set; }
-    public string? Department { get; set; }
-    public Guid EmployeeTypeId { get; set; }
-    public JsonObject FieldValues { get; set; } = new();
 }

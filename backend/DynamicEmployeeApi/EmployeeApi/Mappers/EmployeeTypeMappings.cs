@@ -5,6 +5,9 @@ using EmployeeApi.Responses;
 
 namespace EmployeeApi.Mappers;
 
+/// <summary>
+/// Maps employee type API models to application commands and API responses.
+/// </summary>
 internal static class EmployeeTypeMappings
 {
     public static CreateEmployeeTypeCommand ToCommand(this CreateEmployeeTypeRequest request)

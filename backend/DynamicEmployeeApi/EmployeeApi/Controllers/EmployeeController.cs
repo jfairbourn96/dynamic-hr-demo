@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EmployeeApi.Controllers;
 
+/// <summary>
+/// Manages employee records and dynamic employee search.
+/// </summary>
 [ApiController]
 [Route("api/employees")]
 public class EmployeeController : ControllerBase
@@ -44,7 +47,7 @@ public class EmployeeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
     {
-        Employee employee = await _service.CreateAsync(request.ToCommand());
+        Employee employee = await _service.CreateAsync(request.ToCreateCommand());
 
         return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee.Id);
     }
@@ -64,12 +67,27 @@ public class EmployeeController : ControllerBase
         return Ok(employee);
     }
 
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(Employee), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeRequest request)
+    {
+        Employee? employee = await _service.UpdateAsync(id, request.ToUpdateCommand());
+
+        if (employee is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(employee);
+    }
+
     [HttpPatch("{id:guid}/field")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateField(Guid id, [FromBody] UpdateEmployeeFieldRequest request)
     {
-        if (!await _service.UpdateFieldAsync(id, request.ToCommand()))
+        if (!await _service.UpdateFieldAsync(id, request.ToUpdateFieldCommand()))
         {
             return NotFound();
         }

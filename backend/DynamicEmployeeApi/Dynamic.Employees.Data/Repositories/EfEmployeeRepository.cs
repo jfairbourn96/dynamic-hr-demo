@@ -60,6 +60,13 @@ public class EfEmployeeRepository(BaseEmployeeDbContext context) :
     }
 
     /// <inheritdoc/>
+    public async Task UpdateAsync(Employee employee)
+    {
+        context.Employee.Update(employee);
+        await context.SaveChangesAsync();
+    }
+
+    /// <inheritdoc/>
     public async Task<bool> UpdateFieldAsync(Guid id, string fieldName, System.Text.Json.Nodes.JsonNode? value)
     {
         Employee? employee = await context.Employee.FindAsync(id);

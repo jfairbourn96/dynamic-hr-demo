@@ -14,6 +14,11 @@ public interface IEmployeeWriter
     Task AddAsync(Employee employee);
 
     /// <summary>
+    /// Updates an employee and persists the change.
+    /// </summary>
+    Task UpdateAsync(Employee employee);
+
+    /// <summary>
     /// Updates one dynamic field value for an employee and persists the change.
     /// </summary>
     Task<bool> UpdateFieldAsync(Guid id, string fieldName, JsonNode? value);

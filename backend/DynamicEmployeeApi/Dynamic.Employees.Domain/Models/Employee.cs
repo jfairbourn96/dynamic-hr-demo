@@ -2,6 +2,9 @@ using System.Text.Json.Nodes;
 
 namespace Dynamic.Employees.Domain.Models;
 
+/// <summary>
+/// Represents an employee with core and runtime-defined field values.
+/// </summary>
 public class Employee
 {
     public Guid Id { get; set; }

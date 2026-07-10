@@ -29,11 +29,19 @@ public interface IEmployeeService
     Task<Employee?> GetByIdAsync(Guid id);
 
     /// <summary>
+    /// Replaces the editable values for an employee.
+    /// </summary>
+    Task<Employee?> UpdateAsync(Guid id, UpdateEmployeeCommand command);
+
+    /// <summary>
     /// Updates one dynamic field value.
     /// </summary>
     Task<bool> UpdateFieldAsync(Guid id, UpdateEmployeeFieldCommand command);
 }
 
+/// <summary>
+/// Represents either a valid employee search result or search validation errors.
+/// </summary>
 public record EmployeeSearchServiceResult(
     EmployeeSearchResult? SearchResult,
     IReadOnlyCollection<string> Errors)

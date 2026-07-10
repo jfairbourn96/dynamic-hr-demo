@@ -24,9 +24,7 @@ export interface CreateEmployeeRequest {
   fieldValues: Record<string, unknown>;
 }
 
-export interface UpdateEmployeeRequest extends CreateEmployeeRequest {
-  id: string;
-}
+export type UpdateEmployeeRequest = CreateEmployeeRequest;
 
 export type EmployeeSearchValue = string | number | boolean;
 

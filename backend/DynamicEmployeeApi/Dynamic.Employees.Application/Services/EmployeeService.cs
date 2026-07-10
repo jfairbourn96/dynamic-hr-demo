@@ -114,6 +114,31 @@ public class EmployeeService : IEmployeeService
     }
 
     /// <inheritdoc />
+    public async Task<Employee?> UpdateAsync(Guid id, UpdateEmployeeCommand command)
+    {
+        Employee? employee = await _employeeReader.GetByIdAsync(id);
+
+        if (employee is null)
+        {
+            return null;
+        }
+
+        employee.FirstName = command.FirstName;
+        employee.LastName = command.LastName;
+        employee.Email = command.Email;
+        employee.HireDate = command.HireDate;
+        employee.EndDate = command.EndDate;
+        employee.Department = command.Department;
+        employee.EmployeeTypeId = command.EmployeeTypeId;
+        employee.FieldValues = command.FieldValues;
+        employee.UpdatedDate = DateTime.UtcNow;
+
+        await _employeeWriter.UpdateAsync(employee);
+
+        return employee;
+    }
+
+    /// <inheritdoc />
     public async Task<bool> UpdateFieldAsync(Guid id, UpdateEmployeeFieldCommand command)
     {
         return await _employeeWriter.UpdateFieldAsync(id, command.FieldName, command.Value);

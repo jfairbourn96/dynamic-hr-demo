@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Dynamic.Employees.Data.Configurations;
 
+/// <summary>
+/// Configures persistence for employee type entities.
+/// </summary>
 public class EmployeeTypeConfiguration : IEntityTypeConfiguration<EmployeeType>
 {
     public void Configure(EntityTypeBuilder<EmployeeType> builder)

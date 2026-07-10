@@ -1,5 +1,8 @@
 namespace Dynamic.Employees.Domain.Models;
 
+/// <summary>
+/// Defines an employee classification and its runtime field schema.
+/// </summary>
 public class EmployeeType
 {
     public Guid Id { get; set; }

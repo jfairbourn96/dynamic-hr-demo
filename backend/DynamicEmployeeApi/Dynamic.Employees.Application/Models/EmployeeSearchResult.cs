@@ -3,12 +3,18 @@ using Dynamic.Employees.Domain.Models;
 
 namespace Dynamic.Employees.Application.Models;
 
+/// <summary>
+/// Represents one page of employee search results.
+/// </summary>
 public record EmployeeSearchResult(
     IReadOnlyCollection<EmployeeSearchItem> Items,
     int TotalCount,
     int PageNumber,
     int PageSize);
 
+/// <summary>
+/// Represents an employee returned by a search.
+/// </summary>
 public record EmployeeSearchItem(
     Guid Id,
     string FirstName,

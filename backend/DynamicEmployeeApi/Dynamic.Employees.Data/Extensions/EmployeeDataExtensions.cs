@@ -6,6 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Dynamic.Employees.Data.Extensions;
 
+/// <summary>
+/// Provides dependency injection registration for employee data services.
+/// </summary>
 public static class EmployeeDataExtensions
 {
     public static IServiceCollection RegisterEmployeeDataServices(

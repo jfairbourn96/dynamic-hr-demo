@@ -109,7 +109,7 @@ export function SearchEmployeesPage() {
                           onClick={() => navigate(`/employees/${employee.id}`)}
                           className="text-sm text-blue-600 hover:underline"
                         >
-                          View
+                          Edit
                         </button>
                       </td>
                     </tr>
