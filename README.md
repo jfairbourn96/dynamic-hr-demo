@@ -4,7 +4,23 @@ Dynamic HR Demo is a full-stack sample application for metadata-driven employee 
 
 The point of the project is not just CRUD. It demonstrates how a product can offer flexible user-defined fields while still keeping a clean backend architecture, SQL Server persistence, provider-specific EF Core JSON translation, automated tests, and a React UI that is usable enough to show the flow end to end.
 
+It also serves as a proof-of-concept, real-world example of how to use the Dynamic.Json packages developed in the [`dynamic-json-efcore`](https://github.com/jfairbourn96/dynamic-json-efcore) repository, including [`Dynamic.Json.Search`](https://www.nuget.org/packages/Dynamic.Json.Search), [`Dynamic.Json.EfCore.SqlServer`](https://www.nuget.org/packages/Dynamic.Json.EfCore.SqlServer), and [`Dynamic.Json.AspNetCore`](https://www.nuget.org/packages/Dynamic.Json.AspNetCore).
+
 ![Dynamic HR Demo](frontend/src/assets/hero.png)
+
+## Screenshots
+
+**Define employee types and their runtime-configurable fields.**
+
+![Employee type builder](docs/screenshots/employee-type-builder.png)
+
+**Generate an employee form from the selected type's metadata.**
+
+![Dynamic employee form](docs/screenshots/dynamic-employee-form.gif)
+
+**Filter employees using standard and dynamically defined fields.**
+
+![Employee search](docs/screenshots/dynamic-employee-search.gif)
 
 ## What This Demonstrates
 
@@ -16,19 +32,83 @@ The point of the project is not just CRUD. It demonstrates how a product can off
 - Unit and Docker-backed SQL Server integration tests.
 - GitHub Actions for backend/frontend CI, coverage reporting, and package publishing.
 
-## Demo Flow
+---
 
-1. Create an employee type such as "Contractor", "Engineer", or "Technician".
-2. Add custom fields for that type, for example certification level, start date, equipment assigned, or remote eligible.
-3. Create employees from the selected type. The form is generated from the field metadata.
-4. Search employees by core fields such as department and hire date.
-5. Filter by dynamic fields stored in JSON and translated to SQL Server predicates.
+## Application Architecture
 
-For a more guided walkthrough, see [docs/demo-walkthrough.md](docs/demo-walkthrough.md).
+The application follows a layered architecture with clear separation of responsibilities.
 
-## Quick Start
+```mermaid
+flowchart TD
 
-Prerequisites: .NET SDK 10.x, Node.js 20 or 22, npm 10.x, and SQL Server LocalDB or another SQL Server instance.
+    UI["React + Vite"]
+    API["ASP.NET Core API"]
+    APP["Application Services"]
+    REPO["Repository Layer"]
+    EF["Entity Framework Core"]
+    SQL[("SQL Server")]
+
+    UI -->|"HTTP / JSON"| API
+    API --> APP
+    APP --> REPO
+    REPO --> EF
+    EF --> SQL
+```
+
+This separation allows the dynamic metadata engine, persistence layer, and API surface to evolve independently while keeping business logic isolated from infrastructure concerns.
+
+---
+
+## Testing Strategy
+
+The repository includes both fast unit tests and Docker-backed integration tests.
+
+- **Unit tests** validate business logic in isolation.
+- **Integration tests** execute against a real SQL Server container using Testcontainers to verify EF Core mappings, migrations, JSON translation, and repository behavior.
+
+## Continuous Integration
+
+Every pull request automatically validates the application using GitHub Actions.
+
+Running integration tests against a real SQL Server instance ensures that migrations, EF Core configuration, and dynamic JSON translation behave exactly as they do in production.
+
+---
+
+## Why This Project Exists
+
+Most ORMs assume database schemas are known at compile time.
+
+This project explores a different problem:
+
+> **How can applications support runtime-defined schemas while still preserving a strongly-architected backend, SQL-backed querying, and maintainable code?**
+
+Rather than treating JSON columns as simple serialized blobs, this solution demonstrates how metadata can drive:
+
+- Runtime form generation
+- Dynamic validation
+- Dynamic persistence
+- SQL-backed filtering
+- Clean application architecture
+
+The goal is not simply to build another CRUD application, but to demonstrate the kinds of architectural challenges encountered when designing extensible enterprise software.
+
+## Run With Docker
+
+With Docker Desktop or Docker Engine installed, start the complete stack with one command:
+
+```powershell
+docker compose up --build
+```
+
+Compose starts SQL Server, applies EF Core migrations when the API starts, loads the professional demo data on a fresh database volume, serves the API, and builds the React frontend behind nginx. Open [http://localhost:5173](http://localhost:5173).
+
+The API is also available directly at `http://localhost:5154`. The seed container skips its scripts when employee types already exist, so it never overwrites a running demo database. Stop the stack with `docker compose down`; add `-v` to remove the persisted SQL Server data volume and seed a fresh database on the next start.
+
+For a non-default development SQL Server password, create a root `.env` file containing `MSSQL_SA_PASSWORD=your-strong-password` before starting Compose.
+
+## Quick Start Without Docker
+
+Prerequisites: .NET SDK 10.x, Node.js 20 or 22, npm 10.x, and Docker Desktop or Docker Engine for the recommended SQL Server workflow and integration tests. Another SQL Server instance can also be used with an overridden connection string.
 
 ```powershell
 git clone https://github.com/jfairbourn96/dynamic-hr-demo.git
@@ -71,6 +151,7 @@ backend/DynamicEmployeeApi/
   Dynamic.Employees.Application/  Use-case services, commands, search models, and repository ports
   Dynamic.Employees.Data/         EF Core DbContext, migrations, configurations, and repository implementations
   EmployeeApi/                    ASP.NET Core controllers, request/response DTOs, mapping, and composition
+  EmployeeApi.UnitTests/          API controller and mapping unit tests
 
 frontend/
   src/                            React UI for employee types, dynamic forms, and search
@@ -87,6 +168,58 @@ frontend/
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
 | Tests | xUnit, FluentAssertions, Moq, AutoFixture, Testcontainers for SQL Server |
 | CI | GitHub Actions, coverage report generation, frontend lint/build |
+
+## How The Dynamic Model Works
+
+### Dynamic Metadata Flow
+
+Rather than hardcoding employee fields into C# models or React components, administrators define metadata that drives both the UI and persistence model.
+
+```mermaid
+flowchart TD
+
+    Admin["Administrator"]
+    Types["Create Employee Type"]
+    Fields["Define Dynamic Fields"]
+    Metadata["Metadata stored in SQL Server"]
+    UI["React generates form at runtime"]
+    User["User submits employee"]
+    API["ASP.NET Core API"]
+    JSON["Dynamic values serialized as JSON"]
+    DB[("SQL Server")]
+
+    Admin --> Types
+    Types --> Fields
+    Fields --> Metadata
+    Metadata --> UI
+    UI --> User
+    User --> API
+    API --> JSON
+    JSON --> DB
+```
+
+This approach enables new employee types and fields to be introduced without changing the underlying database schema or deploying new application code.
+
+### Search Flow
+
+```mermaid
+flowchart TD
+
+    Search["User defines filters"]
+    Request["Search request"]
+    Validation["Validate metadata"]
+    Builder["Build dynamic query"]
+    EF["EF Core JSON translation"]
+    SQL[("SQL Server")]
+    Results["Matching employees"]
+
+    Search --> Request
+    Request --> Validation
+    Validation --> Builder
+    Builder --> EF
+    EF --> SQL
+    SQL --> Results
+```
 
 ## Architecture Decisions
 
@@ -125,11 +258,9 @@ Write methods persist internally, so the application services do not call `SaveC
 
 The backend consumes the published Dynamic.Json preview packages:
 
-- `Dynamic.Json.Search` `0.2.1-preview.1` in Application for provider-neutral dynamic search parsing and filter models.
-- `Dynamic.Json.EfCore.SqlServer` `0.2.1-preview.1` in Data for SQL Server JSON query translation.
-- `Dynamic.Json.AspNetCore` `0.2.1-preview.1` in EmployeeApi for ASP.NET Core service registration/adapters.
-
-When developing Dynamic.Json and Dynamic HR together, these package references can be temporarily swapped for sibling project references.
+- [`Dynamic.Json.Search`](https://www.nuget.org/packages/Dynamic.Json.Search) `0.2.1-preview.1` in Application for provider-neutral dynamic search parsing and filter models.
+- [`Dynamic.Json.EfCore.SqlServer`](https://www.nuget.org/packages/Dynamic.Json.EfCore.SqlServer) `0.2.1-preview.1` in Data for SQL Server JSON query translation.
+- [`Dynamic.Json.AspNetCore`](https://www.nuget.org/packages/Dynamic.Json.AspNetCore) `0.2.1-preview.1` in EmployeeApi for ASP.NET Core service registration/adapters.
 
 ## Search Examples
 
@@ -165,7 +296,7 @@ dotnet ef database update `
   --context EmployeeDbContext
 ```
 
-The API is configured for SQL Server LocalDB by default in `EmployeeApi/appsettings.json`.
+The API is configured to use the Docker-published SQL Server instance at `localhost:1433` by default. Compose overrides this with the internal `sqlserver` service hostname when the API itself runs in Docker.
 
 ## Tests
 
@@ -182,6 +313,7 @@ Coverage:
 ```powershell
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\application --collect "XPlat Code Coverage"
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\data --collect "XPlat Code Coverage"
+dotnet test backend\DynamicEmployeeApi\EmployeeApi.UnitTests\EmployeeApi.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\api --collect "XPlat Code Coverage"
 ```
 
 CI generates an HTML/Cobertura coverage report from the backend unit test suites, publishes the Markdown summary to the GitHub Actions job summary, uploads the full report as a `coverage-report` artifact, and runs frontend lint/build checks.

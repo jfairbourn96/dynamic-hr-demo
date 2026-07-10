@@ -15,9 +15,11 @@ public class EfEmployeeRepository(BaseEmployeeDbContext context) :
     IEmployeeWriter
 {
     /// <inheritdoc/>
-    public async Task<EmployeeSearchResult> SearchAsync(EmployeeSearchCriteria criteria)
+    public async Task<EmployeeSearchResult> SearchAsync(
+        EmployeeSearchCriteria criteria,
+        CancellationToken cancellationToken = default)
     {
-        IQueryable<Employee> query = context.Employee
+        IQueryable<Employee> query = context.Employees
             .AsNoTracking()
             .Include(e => e.EmployeeType)
                 .ThenInclude(et => et!.Fields);
@@ -30,11 +32,11 @@ public class EfEmployeeRepository(BaseEmployeeDbContext context) :
         query = ApplyCoreFilters(query, criteria);
         query = ApplyDynamicFilters(query, criteria.DynamicFilters);
 
-        int totalCount = await query.CountAsync();
+        int totalCount = await query.CountAsync(cancellationToken);
         List<Employee> page = await query
             .Skip((criteria.PageNumber - 1) * criteria.PageSize)
             .Take(criteria.PageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return new EmployeeSearchResult(
             page.Select(ToSearchItem).ToList(),
@@ -44,37 +46,27 @@ public class EfEmployeeRepository(BaseEmployeeDbContext context) :
     }
 
     /// <inheritdoc/>
-    public async Task<Employee?> GetByIdAsync(Guid id)
+    public async Task<Employee?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await context.Employee
+        return await context.Employees
             .Include(e => e.EmployeeType)
                 .ThenInclude(et => et!.Fields)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task AddAsync(Employee employee)
+    public async Task AddAsync(Employee employee, CancellationToken cancellationToken = default)
     {
-        await context.Employee.AddAsync(employee);
-        await context.SaveChangesAsync();
+        await context.Employees.AddAsync(employee, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task<bool> UpdateFieldAsync(Guid id, string fieldName, System.Text.Json.Nodes.JsonNode? value)
+    public async Task UpdateAsync(Employee employee, CancellationToken cancellationToken = default)
     {
-        Employee? employee = await context.Employee.FindAsync(id);
-
-        if (employee is null)
-        {
-            return false;
-        }
-
-        employee.FieldValues[fieldName] = value;
-        employee.UpdatedDate = DateTime.UtcNow;
-
-        await context.SaveChangesAsync();
-
-        return true;
+        // Mark only the employee entry, not its included employee-type navigation graph.
+        context.Entry(employee).State = EntityState.Modified;
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     private static IQueryable<Employee> ApplyCoreFilters(

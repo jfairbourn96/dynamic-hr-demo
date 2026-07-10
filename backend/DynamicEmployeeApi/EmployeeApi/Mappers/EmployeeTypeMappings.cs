@@ -5,9 +5,13 @@ using EmployeeApi.Responses;
 
 namespace EmployeeApi.Mappers;
 
+/// <summary>
+/// Maps employee type API models to application commands and API responses.
+/// </summary>
 internal static class EmployeeTypeMappings
 {
-    public static CreateEmployeeTypeCommand ToCommand(this CreateEmployeeTypeRequest request)
+    /// <summary>Maps an employee-type creation request to its application command.</summary>
+    public static CreateEmployeeTypeCommand ToCreateCommand(this CreateEmployeeTypeRequest request)
     {
         return new CreateEmployeeTypeCommand(
             request.Name,
@@ -15,6 +19,16 @@ internal static class EmployeeTypeMappings
             request.Fields.Select(ToCommand).ToArray());
     }
 
+    /// <summary>Maps an employee-type update request to its application command.</summary>
+    public static UpdateEmployeeTypeCommand ToUpdateCommand(this UpdateEmployeeTypeRequest request)
+    {
+        return new UpdateEmployeeTypeCommand(
+            request.Name,
+            request.Description,
+            request.Fields.Select(ToCommand).ToArray());
+    }
+
+    /// <summary>Maps an employee-type domain model to its API response.</summary>
     public static EmployeeTypeResponse ToResponse(this EmployeeType type) => new()
     {
         Id = type.Id.ToString(),

@@ -468,8 +468,10 @@ public class EmployeeServiceSearchTests
         Action<EmployeeSearchCriteria> captureCriteria)
     {
         _employeeSearchRepository
-            .Setup(repository => repository.SearchAsync(It.IsAny<EmployeeSearchCriteria>()))
-            .Callback(captureCriteria)
+            .Setup(repository => repository.SearchAsync(
+                It.IsAny<EmployeeSearchCriteria>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<EmployeeSearchCriteria, CancellationToken>((criteria, _) => captureCriteria(criteria))
             .ReturnsAsync(result);
     }
 

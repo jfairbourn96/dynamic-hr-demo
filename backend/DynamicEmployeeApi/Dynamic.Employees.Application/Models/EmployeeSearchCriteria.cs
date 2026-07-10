@@ -2,6 +2,9 @@ using Dynamic.Json.Search;
 
 namespace Dynamic.Employees.Application.Models;
 
+/// <summary>
+/// Defines normalized, validated criteria for a repository search without HTTP concerns.
+/// </summary>
 public record EmployeeSearchCriteria(
     Guid? EmployeeTypeId,
     IReadOnlyCollection<EmployeeTextSearchFilter> TextFilters,
@@ -11,8 +14,3 @@ public record EmployeeSearchCriteria(
     IReadOnlyCollection<DynamicSearchFilter> DynamicFilters,
     int PageNumber,
     int PageSize);
-
-public record EmployeeTextSearchFilter(
-    string FieldName,
-    SearchOperator Operator,
-    string Value);

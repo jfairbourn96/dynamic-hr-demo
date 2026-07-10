@@ -3,6 +3,9 @@ using Dynamic.Employees.Domain.Enums;
 
 namespace Dynamic.Employees.Domain.Models;
 
+/// <summary>
+/// Defines one runtime-configurable field for an employee type.
+/// </summary>
 public class EmployeeTypeField
 {
     public Guid Id { get; set; }

@@ -25,9 +25,9 @@ public class EmployeeTypeController : ControllerBase
     /// <returns>A list of all employee types.</returns>
     [HttpGet]
     [ProducesResponseType(typeof(List<EmployeeTypeResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        List<EmployeeType> types = await _service.GetAllAsync();
+        List<EmployeeType> types = await _service.GetAllAsync(cancellationToken);
         return Ok(types.Select(type => type.ToResponse()).ToList());
     }
 
@@ -37,9 +37,9 @@ public class EmployeeTypeController : ControllerBase
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(EmployeeTypeResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        EmployeeType? type = await _service.GetByIdAsync(id);
+        EmployeeType? type = await _service.GetByIdAsync(id, cancellationToken);
 
         if (type is null)
         {
@@ -55,9 +55,11 @@ public class EmployeeTypeController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(EmployeeTypeResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateEmployeeTypeRequest request)
+    public async Task<IActionResult> Create(
+        [FromBody] CreateEmployeeTypeRequest request,
+        CancellationToken cancellationToken)
     {
-        EmployeeType type = await _service.CreateAsync(request.ToCommand());
+        EmployeeType type = await _service.CreateAsync(request.ToCreateCommand(), cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = type.Id }, type.ToResponse());
     }
 
@@ -68,9 +70,12 @@ public class EmployeeTypeController : ControllerBase
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(EmployeeTypeResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] CreateEmployeeTypeRequest request)
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateEmployeeTypeRequest request,
+        CancellationToken cancellationToken)
     {
-        EmployeeType? type = await _service.UpdateAsync(id, request.ToCommand());
+        EmployeeType? type = await _service.UpdateAsync(id, request.ToUpdateCommand(), cancellationToken);
 
         if (type is null)
         {
@@ -86,9 +91,9 @@ public class EmployeeTypeController : ControllerBase
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        bool deleted = await _service.DeleteAsync(id);
+        bool deleted = await _service.DeleteAsync(id, cancellationToken);
 
         if (!deleted)
         {

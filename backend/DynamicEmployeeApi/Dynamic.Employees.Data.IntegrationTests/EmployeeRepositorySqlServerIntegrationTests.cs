@@ -133,6 +133,14 @@ public sealed class EmployeeRepositorySqlServerIntegrationTests
             ["isHeeler"] = true,
             ["familyRole"] = "parent",
         }));
+        await employeeRepository.AddAsync(CreateEmployee(employeeType.Id, "Muffin", "Heeler", "muffin@heeler.example", "Stripe's House", new JsonObject
+        {
+            ["favoriteGame"] = "Grannies",
+            ["badgeCount"] = 3,
+            ["firstEpisodeDate"] = "2020-10-01",
+            ["isHeeler"] = false,
+            ["familyRole"] = "child",
+        }));
 
         EmployeeSearchCriteria criteria = new(
             employeeType.Id,
@@ -160,6 +168,79 @@ public sealed class EmployeeRepositorySqlServerIntegrationTests
             result.Items.Single().EmployeeType.Should().NotBeNull();
             result.Items.Single().FieldValues["favoriteGame"]!.GetValue<string>().Should().Be("Keepy Uppy");
         }
+    }
+
+    [Fact]
+    public async Task EmployeeRepository_SearchAsync_TranslatesRemainingDynamicOperatorsAgainstSqlServer()
+    {
+        await using EmployeeDbContext context = CreateContext();
+        await context.Database.MigrateAsync();
+        EmployeeType employeeType = CreateEmployeeType();
+        context.EmployeeTypes.Add(employeeType);
+        await context.SaveChangesAsync();
+        EfEmployeeRepository repository = new(context);
+
+        await repository.AddAsync(CreateEmployee(employeeType.Id, "Bluey", "Heeler", "bluey@heeler.example", "Heeler House", new JsonObject
+        {
+            ["favoriteGame"] = "Keepy Uppy", ["badgeCount"] = 8, ["firstEpisodeDate"] = "2018-10-01", ["isHeeler"] = true, ["familyRole"] = "child",
+        }));
+        await repository.AddAsync(CreateEmployee(employeeType.Id, "Bingo", "Heeler", "bingo@heeler.example", "Heeler House", new JsonObject
+        {
+            ["favoriteGame"] = "Magic Xylophone", ["badgeCount"] = 5, ["firstEpisodeDate"] = "2018-10-01", ["isHeeler"] = true, ["familyRole"] = "child",
+        }));
+        await repository.AddAsync(CreateEmployee(employeeType.Id, "Chilli", "Heeler", "chilli@heeler.example", "Airport Security", new JsonObject
+        {
+            ["favoriteGame"] = "Keepy Uppy", ["badgeCount"] = 9, ["firstEpisodeDate"] = "2018-10-01", ["isHeeler"] = true, ["familyRole"] = "parent",
+        }));
+        await repository.AddAsync(CreateEmployee(employeeType.Id, "Muffin", "Heeler", "muffin@heeler.example", "Stripe's House", new JsonObject
+        {
+            ["favoriteGame"] = "Grannies", ["badgeCount"] = 3, ["firstEpisodeDate"] = "2020-10-01", ["isHeeler"] = false, ["familyRole"] = "child",
+        }));
+
+        EmployeeSearchResult startsWith = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("favoriteGame", DynamicSearchFieldType.Text, SearchOperator.StartsWith, "Keep"));
+        EmployeeSearchResult exact = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("favoriteGame", DynamicSearchFieldType.Text, SearchOperator.Exact, "Magic Xylophone"));
+        EmployeeSearchResult lessThan = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("badgeCount", DynamicSearchFieldType.Number, SearchOperator.LessThan, "6"));
+        EmployeeSearchResult lessThanOrEqual = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("badgeCount", DynamicSearchFieldType.Number, SearchOperator.LessThanOrEqual, "5"));
+        EmployeeSearchResult greaterThan = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("badgeCount", DynamicSearchFieldType.Number, SearchOperator.GreaterThan, "8"));
+        EmployeeSearchResult equal = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("badgeCount", DynamicSearchFieldType.Number, SearchOperator.Exact, "8"));
+        EmployeeSearchResult endDate = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("firstEpisodeDate", DynamicSearchFieldType.Date, SearchOperator.EndDate, "2018-12-31"));
+        EmployeeSearchResult falseValue = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("isHeeler", DynamicSearchFieldType.Boolean, SearchOperator.Exact, "false"));
+        EmployeeSearchResult parent = await SearchAsync(repository, employeeType.Id,
+            new DynamicSearchFilter("familyRole", DynamicSearchFieldType.Select, SearchOperator.Exact, "parent"));
+
+        startsWith.Items.Select(item => item.FirstName).Should().BeEquivalentTo(["Bluey", "Chilli"]);
+        exact.Items.Select(item => item.FirstName).Should().Equal("Bingo");
+        lessThan.Items.Select(item => item.FirstName).Should().BeEquivalentTo(["Bingo", "Muffin"]);
+        lessThanOrEqual.Items.Select(item => item.FirstName).Should().BeEquivalentTo(["Bingo", "Muffin"]);
+        greaterThan.Items.Select(item => item.FirstName).Should().Equal("Chilli");
+        equal.Items.Select(item => item.FirstName).Should().Equal("Bluey");
+        endDate.Items.Select(item => item.FirstName).Should().BeEquivalentTo(["Bluey", "Bingo", "Chilli"]);
+        falseValue.Items.Select(item => item.FirstName).Should().Equal("Muffin");
+        parent.Items.Select(item => item.FirstName).Should().Equal("Chilli");
+    }
+
+    private static Task<EmployeeSearchResult> SearchAsync(
+        EfEmployeeRepository repository,
+        Guid employeeTypeId,
+        DynamicSearchFilter filter)
+    {
+        return repository.SearchAsync(new EmployeeSearchCriteria(
+            employeeTypeId,
+            [],
+            null,
+            null,
+            null,
+            [filter],
+            PageNumber: 1,
+            PageSize: 20));
     }
 
     private EmployeeDbContext CreateContext()

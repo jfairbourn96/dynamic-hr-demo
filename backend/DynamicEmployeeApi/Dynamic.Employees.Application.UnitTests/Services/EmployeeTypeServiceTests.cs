@@ -79,8 +79,8 @@ public class EmployeeTypeServiceTests
         CreateEmployeeTypeCommand command = CreateTrollsTourCommand("Trolls Tour Performer");
 
         _writer
-            .Setup(writer => writer.AddAsync(It.IsAny<EmployeeType>()))
-            .Callback<EmployeeType>(employeeType => capturedType = employeeType)
+            .Setup(writer => writer.AddAsync(It.IsAny<EmployeeType>(), It.IsAny<CancellationToken>()))
+            .Callback<EmployeeType, CancellationToken>((employeeType, _) => capturedType = employeeType)
             .Returns(Task.CompletedTask);
 
         // Act
@@ -140,7 +140,7 @@ public class EmployeeTypeServiceTests
         // Act
         EmployeeType? employeeType = await service.UpdateAsync(
             employeeTypeId,
-            CreateTrollsTourCommand("Band Together Performer"));
+            CreateTrollsTourUpdateCommand("Band Together Performer"));
 
         // Assert
         employeeType.Should().BeNull();
@@ -170,7 +170,7 @@ public class EmployeeTypeServiceTests
         // Act
         EmployeeType? employeeType = await service.UpdateAsync(
             employeeTypeId,
-            CreateTrollsTourCommand("Band Together Performer"));
+            CreateTrollsTourUpdateCommand("Band Together Performer"));
 
         // Assert
         using (new AssertionScope())
@@ -252,5 +252,11 @@ public class EmployeeTypeServiceTests
                     ],
                     Order: 2),
             ]);
+    }
+
+    private static UpdateEmployeeTypeCommand CreateTrollsTourUpdateCommand(string name)
+    {
+        CreateEmployeeTypeCommand create = CreateTrollsTourCommand(name);
+        return new UpdateEmployeeTypeCommand(create.Name, create.Description, create.Fields);
     }
 }

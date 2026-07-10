@@ -5,10 +5,18 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Dynamic.Employees.Data.Configurations;
 
+/// <summary>
+/// Configures persistence for employee entities.
+/// </summary>
+/// <remarks>
+/// Runtime-defined values are stored in one JSON column and configured through Dynamic.Json so
+/// provider-specific search expressions can be translated to SQL Server rather than evaluated in memory.
+/// </remarks>
 public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
 {
     private const string FieldValuesColumnName = "FieldValuesJson";
 
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Employee> builder)
     {
         builder.ToTable(nameof(Employee));
