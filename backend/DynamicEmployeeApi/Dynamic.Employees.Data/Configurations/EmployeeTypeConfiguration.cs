@@ -7,8 +7,13 @@ namespace Dynamic.Employees.Data.Configurations;
 /// <summary>
 /// Configures persistence for employee type entities.
 /// </summary>
+/// <remarks>
+/// Field definitions and select options are owned JSON collections because they form the runtime
+/// schema of one employee type and are replaced as part of that aggregate rather than queried independently.
+/// </remarks>
 public class EmployeeTypeConfiguration : IEntityTypeConfiguration<EmployeeType>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<EmployeeType> builder)
     {
         builder.ToTable(nameof(EmployeeType));

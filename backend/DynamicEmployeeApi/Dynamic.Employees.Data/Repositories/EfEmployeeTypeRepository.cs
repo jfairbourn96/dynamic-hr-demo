@@ -10,30 +10,31 @@ public class EfEmployeeTypeRepository(BaseEmployeeDbContext context) :
     IEmployeeTypeWriter
 {
     /// <inheritdoc/>
-    public async Task<List<EmployeeType>> GetAllAsync() => await context.EmployeeTypes.ToListAsync();
+    public async Task<List<EmployeeType>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await context.EmployeeTypes.ToListAsync(cancellationToken);
 
     /// <inheritdoc/>
-    public async Task<EmployeeType?> GetByIdAsync(Guid id)
-        => await context.EmployeeTypes.FirstOrDefaultAsync(et => et.Id == id);
+    public async Task<EmployeeType?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await context.EmployeeTypes.FirstOrDefaultAsync(et => et.Id == id, cancellationToken);
 
     /// <inheritdoc/>
-    public async Task AddAsync(EmployeeType employeeType)
+    public async Task AddAsync(EmployeeType employeeType, CancellationToken cancellationToken = default)
     {
-        await context.EmployeeTypes.AddAsync(employeeType);
-        await context.SaveChangesAsync();
+        await context.EmployeeTypes.AddAsync(employeeType, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task UpdateAsync(EmployeeType employeeType)
+    public async Task UpdateAsync(EmployeeType employeeType, CancellationToken cancellationToken = default)
     {
         context.EmployeeTypes.Update(employeeType);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task DeleteAsync(EmployeeType employeeType)
+    public async Task DeleteAsync(EmployeeType employeeType, CancellationToken cancellationToken = default)
     {
         context.EmployeeTypes.Remove(employeeType);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -8,6 +8,7 @@ namespace Dynamic.Employees.Application.Extensions;
 /// </summary>
 public static class EmployeeApplicationExtensions
 {
+    /// <summary>Registers employee application services with scoped lifetimes.</summary>
     public static IServiceCollection RegisterEmployeeApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IEmployeeService, EmployeeService>();

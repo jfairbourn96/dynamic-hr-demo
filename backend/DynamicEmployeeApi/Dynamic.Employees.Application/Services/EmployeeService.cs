@@ -40,7 +40,8 @@ public class EmployeeService : IEmployeeService
         Guid? employeeTypeId,
         int pageNumber,
         int pageSize,
-        IReadOnlyDictionary<string, string?> parameters)
+        IReadOnlyDictionary<string, string?> parameters,
+        CancellationToken cancellationToken = default)
     {
         pageNumber = Math.Max(pageNumber, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -50,7 +51,7 @@ public class EmployeeService : IEmployeeService
 
         if (employeeTypeId.HasValue)
         {
-            employeeType = await _employeeTypeReader.GetByIdAsync(employeeTypeId.Value);
+            employeeType = await _employeeTypeReader.GetByIdAsync(employeeTypeId.Value, cancellationToken);
 
             if (employeeType is null)
             {
@@ -79,14 +80,26 @@ public class EmployeeService : IEmployeeService
             pageNumber,
             pageSize);
 
-        EmployeeSearchResult result = await _employeeSearchRepository.SearchAsync(criteria);
+        EmployeeSearchResult result = await _employeeSearchRepository.SearchAsync(criteria, cancellationToken);
 
         return EmployeeSearchServiceResult.Success(result);
     }
 
     /// <inheritdoc />
-    public async Task<Employee> CreateAsync(CreateEmployeeCommand command)
+    public async Task<EmployeeMutationServiceResult> CreateAsync(
+        CreateEmployeeCommand command,
+        CancellationToken cancellationToken = default)
     {
+        IReadOnlyCollection<string> errors = await ValidateEmployeeValuesAsync(
+            command.EmployeeTypeId,
+            command.FieldValues,
+            cancellationToken);
+
+        if (errors.Count > 0)
+        {
+            return EmployeeMutationServiceResult.Failure(errors);
+        }
+
         Employee employee = new()
         {
             Id = Guid.NewGuid(),
@@ -94,7 +107,7 @@ public class EmployeeService : IEmployeeService
             LastName = command.LastName,
             Email = command.Email,
             HireDate = command.HireDate,
-            EndDate = command.EndDate ?? DateOnly.MinValue,
+            EndDate = command.EndDate,
             Department = command.Department,
             EmployeeTypeId = command.EmployeeTypeId,
             FieldValues = command.FieldValues,
@@ -102,25 +115,38 @@ public class EmployeeService : IEmployeeService
             UpdatedDate = DateTime.UtcNow,
         };
 
-        await _employeeWriter.AddAsync(employee);
+        await _employeeWriter.AddAsync(employee, cancellationToken);
 
-        return employee;
+        return EmployeeMutationServiceResult.Success(employee);
     }
 
     /// <inheritdoc />
-    public async Task<Employee?> GetByIdAsync(Guid id)
+    public async Task<Employee?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _employeeReader.GetByIdAsync(id);
+        return await _employeeReader.GetByIdAsync(id, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<Employee?> UpdateAsync(Guid id, UpdateEmployeeCommand command)
+    public async Task<EmployeeMutationServiceResult> UpdateAsync(
+        Guid id,
+        UpdateEmployeeCommand command,
+        CancellationToken cancellationToken = default)
     {
-        Employee? employee = await _employeeReader.GetByIdAsync(id);
+        Employee? employee = await _employeeReader.GetByIdAsync(id, cancellationToken);
 
         if (employee is null)
         {
-            return null;
+            return EmployeeMutationServiceResult.Missing();
+        }
+
+        IReadOnlyCollection<string> errors = await ValidateEmployeeValuesAsync(
+            command.EmployeeTypeId,
+            command.FieldValues,
+            cancellationToken);
+
+        if (errors.Count > 0)
+        {
+            return EmployeeMutationServiceResult.Failure(errors);
         }
 
         employee.FirstName = command.FirstName;
@@ -133,15 +159,88 @@ public class EmployeeService : IEmployeeService
         employee.FieldValues = command.FieldValues;
         employee.UpdatedDate = DateTime.UtcNow;
 
-        await _employeeWriter.UpdateAsync(employee);
+        await _employeeWriter.UpdateAsync(employee, cancellationToken);
 
-        return employee;
+        return EmployeeMutationServiceResult.Success(employee);
     }
 
-    /// <inheritdoc />
-    public async Task<bool> UpdateFieldAsync(Guid id, UpdateEmployeeFieldCommand command)
+    private async Task<IReadOnlyCollection<string>> ValidateEmployeeValuesAsync(
+        Guid employeeTypeId,
+        System.Text.Json.Nodes.JsonObject fieldValues,
+        CancellationToken cancellationToken)
     {
-        return await _employeeWriter.UpdateFieldAsync(id, command.FieldName, command.Value);
+        EmployeeType? employeeType = await _employeeTypeReader.GetByIdAsync(employeeTypeId, cancellationToken);
+
+        if (employeeType is null)
+        {
+            return ["Employee type was not found."];
+        }
+
+        List<string> errors = [];
+        Dictionary<string, EmployeeTypeField> fields = employeeType.Fields
+            .ToDictionary(field => field.Name, StringComparer.OrdinalIgnoreCase);
+
+        foreach (string suppliedName in fieldValues.Select(pair => pair.Key))
+        {
+            if (!fields.ContainsKey(suppliedName))
+            {
+                errors.Add($"Dynamic field '{suppliedName}' does not exist on employee type '{employeeType.Name}'.");
+            }
+        }
+
+        foreach (EmployeeTypeField field in employeeType.Fields)
+        {
+            fieldValues.TryGetPropertyValue(field.Name, out System.Text.Json.Nodes.JsonNode? value);
+
+            if (field.Required && IsMissing(value))
+            {
+                errors.Add($"Dynamic field '{field.Name}' is required.");
+                continue;
+            }
+
+            if (value is null)
+            {
+                continue;
+            }
+
+            if (!IsValidFieldValue(field, value))
+            {
+                errors.Add($"Dynamic field '{field.Name}' has an invalid {field.FieldType.ToString().ToLowerInvariant()} value.");
+            }
+        }
+
+        return errors;
+    }
+
+    private static bool IsMissing(System.Text.Json.Nodes.JsonNode? value) =>
+        value is null ||
+        value is System.Text.Json.Nodes.JsonValue jsonValue &&
+        jsonValue.TryGetValue<string>(out string? text) &&
+        string.IsNullOrWhiteSpace(text);
+
+    private static bool IsValidFieldValue(EmployeeTypeField field, System.Text.Json.Nodes.JsonNode value)
+    {
+        if (value is not System.Text.Json.Nodes.JsonValue jsonValue)
+        {
+            return false;
+        }
+
+        return field.FieldType switch
+        {
+            FieldType.Text or FieldType.Address => jsonValue.TryGetValue<string>(out _),
+            FieldType.Number =>
+                jsonValue.TryGetValue<decimal>(out _) ||
+                jsonValue.TryGetValue<double>(out _) ||
+                jsonValue.TryGetValue<int>(out _),
+            FieldType.Date =>
+                jsonValue.TryGetValue<string>(out string? date) &&
+                DateOnly.TryParse(date, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+            FieldType.Boolean => jsonValue.TryGetValue<bool>(out _),
+            FieldType.Select =>
+                jsonValue.TryGetValue<string>(out string? option) &&
+                field.Options.Any(candidate => candidate.Value == option),
+            _ => false,
+        };
     }
 
     private static IReadOnlyCollection<EmployeeTextSearchFilter> GetCoreTextFilters(
@@ -254,6 +353,8 @@ public class EmployeeService : IEmployeeService
     {
         DynamicSearchQueryParserOptions options = new();
 
+        // Core and paging parameters belong to this service. Ignoring them here ensures the
+        // Dynamic.Json parser evaluates only runtime-defined field parameters.
         options.IgnoredKeys.UnionWith(
         [
             "employeeTypeId",

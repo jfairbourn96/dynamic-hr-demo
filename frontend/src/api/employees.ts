@@ -23,7 +23,7 @@ export const employeesApi = {
 
     return api.get<PagedResult<Employee>>(`/employees/search?${params.toString()}`);
   },
-  create: (body: CreateEmployeeRequest) => api.post<Employee>('/employees', body),
+  create: (body: CreateEmployeeRequest) => api.post<string>('/employees', body),
   update: (id: string, body: UpdateEmployeeRequest) => api.put<Employee>(`/employees/${id}`, body),
   delete: (id: string) => api.delete(`/employees/${id}`),
 };

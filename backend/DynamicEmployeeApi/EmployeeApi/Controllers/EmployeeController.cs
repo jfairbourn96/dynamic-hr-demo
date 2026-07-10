@@ -2,6 +2,7 @@ using Dynamic.Employees.Application.Services;
 using Dynamic.Employees.Domain.Models;
 using EmployeeApi.Mappers;
 using EmployeeApi.Requests;
+using EmployeeApi.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EmployeeApi.Controllers;
@@ -20,79 +21,89 @@ public class EmployeeController : ControllerBase
         _service = service;
     }
 
+    /// <summary>Searches employees using core and runtime-defined field filters.</summary>
+    /// <returns>A validated page of matching employees, or 400 for invalid filters.</returns>
     [HttpGet("search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Search(
         [FromQuery] Guid? employeeTypeId,
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
         EmployeeSearchServiceResult result = await _service.SearchAsync(
             employeeTypeId,
             pageNumber,
             pageSize,
-            ToParameterDictionary(Request.Query));
+            ToParameterDictionary(Request.Query),
+            cancellationToken);
+
+        return result.IsValid
+            ? Ok(result.SearchResult!.ToResponse())
+            : BadRequest(new { result.Errors });
+    }
+
+    /// <summary>Creates an employee after validating its dynamic values against its employee type.</summary>
+    /// <returns>The new employee identifier, or 400 for invalid employee values.</returns>
+    [HttpPost]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Create(
+        [FromBody] CreateEmployeeRequest request,
+        CancellationToken cancellationToken)
+    {
+        EmployeeMutationServiceResult result = await _service.CreateAsync(
+            request.ToCreateCommand(),
+            cancellationToken);
 
         if (!result.IsValid)
         {
             return BadRequest(new { result.Errors });
         }
 
-        return Ok(result.SearchResult);
+        Guid id = result.Employee!.Id;
+        return CreatedAtAction(nameof(GetById), new { id }, id);
     }
 
-    [HttpPost]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
-    {
-        Employee employee = await _service.CreateAsync(request.ToCreateCommand());
-
-        return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee.Id);
-    }
-
+    /// <summary>Returns an employee by identifier.</summary>
+    /// <returns>The employee API representation, or 404 when it does not exist.</returns>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(Employee), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EmployeeResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        Employee? employee = await _service.GetByIdAsync(id);
+        Employee? employee = await _service.GetByIdAsync(id, cancellationToken);
 
-        if (employee is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(employee);
+        return employee is null
+            ? NotFound()
+            : Ok(employee.ToResponse());
     }
 
+    /// <summary>Replaces an employee's editable core and dynamic values.</summary>
+    /// <returns>The updated API representation, 400 for invalid values, or 404 when not found.</returns>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(Employee), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EmployeeResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeRequest request)
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateEmployeeRequest request,
+        CancellationToken cancellationToken)
     {
-        Employee? employee = await _service.UpdateAsync(id, request.ToUpdateCommand());
+        EmployeeMutationServiceResult result = await _service.UpdateAsync(
+            id,
+            request.ToUpdateCommand(),
+            cancellationToken);
 
-        if (employee is null)
+        if (result.NotFound)
         {
             return NotFound();
         }
 
-        return Ok(employee);
-    }
-
-    [HttpPatch("{id:guid}/field")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateField(Guid id, [FromBody] UpdateEmployeeFieldRequest request)
-    {
-        if (!await _service.UpdateFieldAsync(id, request.ToUpdateFieldCommand()))
-        {
-            return NotFound();
-        }
-
-        return NoContent();
+        return result.IsValid
+            ? Ok(result.Employee!.ToResponse())
+            : BadRequest(new { result.Errors });
     }
 
     private static IReadOnlyDictionary<string, string?> ToParameterDictionary(IQueryCollection query)
@@ -102,5 +113,4 @@ public class EmployeeController : ControllerBase
             pair => pair.Value.FirstOrDefault(),
             StringComparer.OrdinalIgnoreCase);
     }
-
 }

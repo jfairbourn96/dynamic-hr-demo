@@ -26,7 +26,7 @@ public class EfEmployeeRepositoryTests
         await repository.AddAsync(employee);
 
         // Assert
-        Employee? persisted = await context.Employee.SingleOrDefaultAsync();
+        Employee? persisted = await context.Employees.SingleOrDefaultAsync();
 
         using (new AssertionScope())
         {
@@ -45,7 +45,7 @@ public class EfEmployeeRepositoryTests
         EmployeeType employeeType = CreateEmployeeType();
         Employee employee = CreateEmployee(employeeType.Id, "Branch");
         context.EmployeeTypes.Add(employeeType);
-        context.Employee.Add(employee);
+        context.Employees.Add(employee);
         await context.SaveChangesAsync();
         EfEmployeeRepository repository = new(context);
 
@@ -65,54 +65,6 @@ public class EfEmployeeRepositoryTests
     }
 
     [Fact]
-    public async Task UpdateFieldAsync_WhenEmployeeDoesNotExist_ReturnsFalse()
-    {
-        // Arrange
-        await using EmployeeDbContext context = CreateContext();
-        EfEmployeeRepository repository = new(context);
-
-        // Act
-        bool updated = await repository.UpdateFieldAsync(
-            Guid.NewGuid(),
-            "movieVersion",
-            JsonValue.Create("world-tour-2020"));
-
-        // Assert
-        updated.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task UpdateFieldAsync_WhenEmployeeExists_UpdatesFieldValueAndReturnsTrue()
-    {
-        // Arrange
-        await using EmployeeDbContext context = CreateContext();
-        EmployeeType employeeType = CreateEmployeeType();
-        Employee employee = CreateEmployee(employeeType.Id, "Viva");
-        DateTime originalUpdatedDate = DateTime.UtcNow.AddDays(-1);
-        employee.UpdatedDate = originalUpdatedDate;
-        context.EmployeeTypes.Add(employeeType);
-        context.Employee.Add(employee);
-        await context.SaveChangesAsync();
-        EfEmployeeRepository repository = new(context);
-
-        // Act
-        bool updated = await repository.UpdateFieldAsync(
-            employee.Id,
-            "movieVersion",
-            JsonValue.Create("band-together-2023"));
-
-        // Assert
-        Employee persisted = await context.Employee.SingleAsync();
-
-        using (new AssertionScope())
-        {
-            updated.Should().BeTrue();
-            persisted.FieldValues["movieVersion"]!.GetValue<string>().Should().Be("band-together-2023");
-            persisted.UpdatedDate.Should().BeAfter(originalUpdatedDate);
-        }
-    }
-
-    [Fact]
     public async Task SearchAsync_WhenNoFiltersAreProvided_ReturnsRequestedPageAndTotalCount()
     {
         // Arrange
@@ -122,7 +74,7 @@ public class EfEmployeeRepositoryTests
         Employee second = CreateEmployee(employeeType.Id, "Branch");
         Employee third = CreateEmployee(employeeType.Id, "Viva");
         context.EmployeeTypes.Add(employeeType);
-        context.Employee.AddRange(first, second, third);
+        context.Employees.AddRange(first, second, third);
         await context.SaveChangesAsync();
         EfEmployeeRepository repository = new(context);
 
@@ -169,7 +121,7 @@ public class EfEmployeeRepositoryTests
         branch.HireDate = new DateOnly(2023, 11, 17);
 
         context.EmployeeTypes.Add(employeeType);
-        context.Employee.AddRange(poppy, branch);
+        context.Employees.AddRange(poppy, branch);
         await context.SaveChangesAsync();
         EfEmployeeRepository repository = new(context);
 
@@ -211,7 +163,7 @@ public class EfEmployeeRepositoryTests
         branch.Department = "Lonesome Flats";
 
         context.EmployeeTypes.Add(employeeType);
-        context.Employee.AddRange(poppy, branch);
+        context.Employees.AddRange(poppy, branch);
         await context.SaveChangesAsync();
         EfEmployeeRepository repository = new(context);
 

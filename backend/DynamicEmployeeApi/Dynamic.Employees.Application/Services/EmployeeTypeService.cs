@@ -21,19 +21,19 @@ public class EmployeeTypeService : IEmployeeTypeService
     }
 
     /// <inheritdoc />
-    public async Task<List<EmployeeType>> GetAllAsync()
+    public async Task<List<EmployeeType>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _reader.GetAllAsync();
+        return await _reader.GetAllAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<EmployeeType?> GetByIdAsync(Guid id)
+    public async Task<EmployeeType?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _reader.GetByIdAsync(id);
+        return await _reader.GetByIdAsync(id, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<EmployeeType> CreateAsync(CreateEmployeeTypeCommand command)
+    public async Task<EmployeeType> CreateAsync(CreateEmployeeTypeCommand command, CancellationToken cancellationToken = default)
     {
         EmployeeType type = new()
         {
@@ -45,15 +45,18 @@ public class EmployeeTypeService : IEmployeeTypeService
             UpdatedDate = DateTime.UtcNow,
         };
 
-        await _writer.AddAsync(type);
+        await _writer.AddAsync(type, cancellationToken);
 
         return type;
     }
 
     /// <inheritdoc />
-    public async Task<EmployeeType?> UpdateAsync(Guid id, CreateEmployeeTypeCommand command)
+    public async Task<EmployeeType?> UpdateAsync(
+        Guid id,
+        UpdateEmployeeTypeCommand command,
+        CancellationToken cancellationToken = default)
     {
-        EmployeeType? type = await _reader.GetByIdAsync(id);
+        EmployeeType? type = await _reader.GetByIdAsync(id, cancellationToken);
 
         if (type is null)
         {
@@ -65,22 +68,22 @@ public class EmployeeTypeService : IEmployeeTypeService
         type.Fields = command.Fields.Select(ToField).ToList();
         type.UpdatedDate = DateTime.UtcNow;
 
-        await _writer.UpdateAsync(type);
+        await _writer.UpdateAsync(type, cancellationToken);
 
         return type;
     }
 
     /// <inheritdoc />
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        EmployeeType? type = await _reader.GetByIdAsync(id);
+        EmployeeType? type = await _reader.GetByIdAsync(id, cancellationToken);
 
         if (type is null)
         {
             return false;
         }
 
-        await _writer.DeleteAsync(type);
+        await _writer.DeleteAsync(type, cancellationToken);
 
         return true;
     }

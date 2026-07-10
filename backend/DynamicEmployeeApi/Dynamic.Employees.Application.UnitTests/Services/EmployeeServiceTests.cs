@@ -16,6 +16,7 @@ public class EmployeeServiceTests
     private readonly IFixture _fixture;
     private readonly Mock<IEmployeeReader> _employeeReader;
     private readonly Mock<IEmployeeWriter> _employeeWriter;
+    private readonly Mock<IEmployeeTypeReader> _employeeTypeReader;
 
     public EmployeeServiceTests()
     {
@@ -23,6 +24,24 @@ public class EmployeeServiceTests
 
         _employeeReader = _fixture.Freeze<Mock<IEmployeeReader>>();
         _employeeWriter = _fixture.Freeze<Mock<IEmployeeWriter>>();
+        _employeeTypeReader = _fixture.Freeze<Mock<IEmployeeTypeReader>>();
+        _employeeTypeReader
+            .Setup(reader => reader.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, CancellationToken _) => new EmployeeType
+            {
+                Id = id,
+                Name = "Trolls Tour Performer",
+                Fields =
+                [
+                    new EmployeeTypeField { Name = "favoriteSongName" },
+                    new EmployeeTypeField
+                    {
+                        Name = "movieVersion",
+                        FieldType = Dynamic.Employees.Domain.Enums.FieldType.Select,
+                        Options = [new FieldOption { Value = "trolls-2016" }],
+                    },
+                ],
+            });
     }
 
     [Fact]
@@ -49,12 +68,13 @@ public class EmployeeServiceTests
             fieldValues);
 
         _employeeWriter
-            .Setup(writer => writer.AddAsync(It.IsAny<Employee>()))
-            .Callback<Employee>(employee => capturedEmployee = employee)
+            .Setup(writer => writer.AddAsync(It.IsAny<Employee>(), It.IsAny<CancellationToken>()))
+            .Callback<Employee, CancellationToken>((employee, _) => capturedEmployee = employee)
             .Returns(Task.CompletedTask);
 
         // Act
-        Employee employee = await service.CreateAsync(command);
+        EmployeeMutationServiceResult result = await service.CreateAsync(command);
+        Employee employee = result.Employee!;
 
         // Assert
         using (new AssertionScope())
@@ -65,7 +85,7 @@ public class EmployeeServiceTests
             employee.LastName.Should().Be("Troll");
             employee.Email.Should().Be("poppy@trolls.example");
             employee.HireDate.Should().Be(new DateOnly(2016, 11, 4));
-            employee.EndDate.Should().Be(DateOnly.MinValue);
+            employee.EndDate.Should().BeNull();
             employee.Department.Should().Be("Pop Village");
             employee.EmployeeTypeId.Should().Be(employeeTypeId);
             ((object)employee.FieldValues).Should().BeSameAs(fieldValues);
@@ -74,7 +94,7 @@ public class EmployeeServiceTests
         }
 
         _employeeWriter.Verify(
-            writer => writer.AddAsync(It.IsAny<Employee>()),
+            writer => writer.AddAsync(It.IsAny<Employee>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -96,10 +116,10 @@ public class EmployeeServiceTests
             []);
 
         // Act
-        Employee employee = await service.CreateAsync(command);
+        EmployeeMutationServiceResult result = await service.CreateAsync(command);
 
         // Assert
-        employee.EndDate.Should().Be(endDate);
+        result.Employee!.EndDate.Should().Be(endDate);
     }
 
     [Fact]
@@ -125,27 +145,4 @@ public class EmployeeServiceTests
             Times.Once);
     }
 
-    [Fact]
-    public async Task UpdateFieldAsync_WhenCommandIsProvided_DelegatesToWriter()
-    {
-        // Arrange
-        Guid employeeId = Guid.NewGuid();
-        JsonValue value = JsonValue.Create("world-tour-2020");
-        UpdateEmployeeFieldCommand command = new("movieVersion", value);
-        EmployeeService service = _fixture.Create<EmployeeService>();
-
-        _employeeWriter
-            .Setup(writer => writer.UpdateFieldAsync(employeeId, "movieVersion", value))
-            .ReturnsAsync(true);
-
-        // Act
-        bool updated = await service.UpdateFieldAsync(employeeId, command);
-
-        // Assert
-        updated.Should().BeTrue();
-
-        _employeeWriter.Verify(
-            writer => writer.UpdateFieldAsync(employeeId, "movieVersion", value),
-            Times.Once);
-    }
 }

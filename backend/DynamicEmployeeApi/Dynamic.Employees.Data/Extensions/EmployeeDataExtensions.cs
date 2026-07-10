@@ -9,8 +9,15 @@ namespace Dynamic.Employees.Data.Extensions;
 /// <summary>
 /// Provides dependency injection registration for employee data services.
 /// </summary>
+/// <remarks>
+/// Each narrow employee port resolves to the same scoped repository instance. This preserves the
+/// application's capability-based interfaces while sharing one EF Core context per request.
+/// </remarks>
 public static class EmployeeDataExtensions
 {
+    /// <summary>
+    /// Registers SQL Server persistence, Dynamic.Json translation, and repository ports.
+    /// </summary>
     public static IServiceCollection RegisterEmployeeDataServices(
         this IServiceCollection services,
         string connectionString)

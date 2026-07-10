@@ -15,9 +15,3 @@ public sealed class SqlServerContainerFixture : IAsyncLifetime
     public Task DisposeAsync()
         => _container.DisposeAsync().AsTask();
 }
-
-[CollectionDefinition(Name)]
-public sealed class SqlServerContainerCollection : ICollectionFixture<SqlServerContainerFixture>
-{
-    public const string Name = "SqlServerContainer";
-}
