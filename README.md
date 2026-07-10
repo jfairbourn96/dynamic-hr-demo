@@ -108,7 +108,7 @@ For a non-default development SQL Server password, create a root `.env` file con
 
 ## Quick Start Without Docker
 
-Prerequisites: .NET SDK 10.x, Node.js 20 or 22, npm 10.x, SQL Server LocalDB or another SQL Server instance, and Docker for integration tests.
+Prerequisites: .NET SDK 10.x, Node.js 20 or 22, npm 10.x, and Docker Desktop or Docker Engine for the recommended SQL Server workflow and integration tests. Another SQL Server instance can also be used with an overridden connection string.
 
 ```powershell
 git clone https://github.com/jfairbourn96/dynamic-hr-demo.git
@@ -296,7 +296,7 @@ dotnet ef database update `
   --context EmployeeDbContext
 ```
 
-The API is configured for SQL Server LocalDB by default in `EmployeeApi/appsettings.json`.
+The API is configured to use the Docker-published SQL Server instance at `localhost:1433` by default. Compose overrides this with the internal `sqlserver` service hostname when the API itself runs in Docker.
 
 ## Tests
 
@@ -313,6 +313,7 @@ Coverage:
 ```powershell
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\application --collect "XPlat Code Coverage"
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\data --collect "XPlat Code Coverage"
+dotnet test backend\DynamicEmployeeApi\EmployeeApi.UnitTests\EmployeeApi.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\api --collect "XPlat Code Coverage"
 ```
 
 CI generates an HTML/Cobertura coverage report from the backend unit test suites, publishes the Markdown summary to the GitHub Actions job summary, uploads the full report as a `coverage-report` artifact, and runs frontend lint/build checks.

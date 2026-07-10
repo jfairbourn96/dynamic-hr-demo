@@ -36,6 +36,9 @@ jobs:
       - name: Data unit tests with coverage
         run: dotnet test Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj --configuration Release --no-build --settings coverlet.runsettings --results-directory ../../artifacts/coverage/raw/data --collect "XPlat Code Coverage"
 
+      - name: API unit tests with coverage
+        run: dotnet test EmployeeApi.UnitTests\EmployeeApi.UnitTests.csproj --configuration Release --no-build --settings coverlet.runsettings --results-directory ../../artifacts/coverage/raw/api --collect "XPlat Code Coverage"
+
       - name: Generate coverage report
         uses: danielpalme/ReportGenerator-GitHub-Action@5.5.10
         with:
@@ -108,4 +111,15 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  docker-compose-config:
+    name: Docker Compose configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
 

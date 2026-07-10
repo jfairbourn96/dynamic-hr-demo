@@ -8,7 +8,8 @@
 | dotnet-ef CLI | 10.x | Required for migrations |
 | Node.js | 20.x or 22.x | `node --version` |
 | npm | 10.x | Bundled with Node |
-| SQL Server | Any dev instance | LocalDB works for this repo |
+| Docker Desktop / Engine | Current | Runs SQL Server, the full stack, and Testcontainers integration tests |
+| SQL Server | Optional alternative | Use only when not running SQL Server through Docker |
 | Git | Any recent version | |
 
 Install or update the EF Core CLI:
@@ -85,13 +86,13 @@ dotnet build backend\DynamicEmployeeApi\DynamicEmployeeApi.sln
 
 ### Database
 
-The default connection string in `backend/DynamicEmployeeApi/EmployeeApi/appsettings.json` uses SQL Server LocalDB:
+The default connection string in `backend/DynamicEmployeeApi/EmployeeApi/appsettings.json` targets the Docker-published SQL Server instance:
 
 ```json
-"DefaultConnection": "Server=(localdb)\\.\\DYNAMICHRPUBLIC;Database=master;Trusted_Connection=True;"
+"DefaultConnection": "Server=localhost,1433;Database=DynamicHr;User Id=sa;Password=DynamicHr!Passw0rd;TrustServerCertificate=True;Encrypt=False;"
 ```
 
-To use SQL Server Developer Edition, SQL Server Express, or Docker SQL Server, update that connection string before applying migrations. The Compose API container supplies its own connection string and sets `Database__ApplyMigrationsOnStartup=true`, so no manual migration command is needed for the Docker workflow.
+To use another SQL Server instance, override that connection string before applying migrations. The Compose API container supplies its own connection string and sets `Database__ApplyMigrationsOnStartup=true`, so no manual migration command is needed for the Docker workflow.
 
 ### Apply Migrations
 
@@ -164,11 +165,28 @@ Collect backend coverage:
 ```powershell
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Application.UnitTests\Dynamic.Employees.Application.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\application --collect "XPlat Code Coverage"
 dotnet test backend\DynamicEmployeeApi\Dynamic.Employees.Data.UnitTests\Dynamic.Employees.Data.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\data --collect "XPlat Code Coverage"
+dotnet test backend\DynamicEmployeeApi\EmployeeApi.UnitTests\EmployeeApi.UnitTests.csproj --settings backend\DynamicEmployeeApi\coverlet.runsettings --results-directory artifacts\coverage\raw\api --collect "XPlat Code Coverage"
 ```
 
 Backend unit tests use xUnit, Moq, AutoFixture.AutoMoq, and FluentAssertions. The current test style freezes mocks for important collaborators, lets AutoFixture construct the service under test, uses explicit Arrange/Act/Assert comments, and uses fluent assertions for readable expectations.
 
 Coverage notes and the current backend baseline live in `docs/test-coverage.md`.
+
+## Debug The API Locally With Docker SQL Server
+
+To use normal IDE breakpoints while avoiding a local SQL Server installation, start the Docker database, containerized API migration step, and one-shot seed process:
+
+```powershell
+docker compose up -d sqlserver api seed
+```
+
+Wait for the seed container to complete, then stop only the API container:
+
+```powershell
+docker compose stop api
+```
+
+Start `EmployeeApi` from the IDE and run the frontend locally with `npm run dev`. The development appsettings files already target `localhost:1433`, which is the SQL Server container's published port.
 
 ## Frontend
 
