@@ -1,7 +1,5 @@
 using Dynamic.Employees.Application.Interfaces;
 using Dynamic.Employees.Data.Repositories;
-using Dynamic.Json.EfCore.SqlServer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Dynamic.Employees.Data.Extensions;
@@ -16,20 +14,11 @@ namespace Dynamic.Employees.Data.Extensions;
 public static class EmployeeDataExtensions
 {
     /// <summary>
-    /// Registers SQL Server persistence, Dynamic.Json translation, and repository ports.
+    /// Registers the provider-neutral repository ports for an employee database context.
     /// </summary>
     public static IServiceCollection RegisterEmployeeDataServices(
-        this IServiceCollection services,
-        string connectionString)
+        this IServiceCollection services)
     {
-        services.AddDbContext<EmployeeDbContext>(options =>
-            options
-                .UseSqlServer(connectionString,
-                    x => x.MigrationsAssembly(typeof(EmployeeDbContext).Assembly.GetName().Name))
-                .UseDynamicJsonSqlServer());
-
-        services.AddScoped<BaseEmployeeDbContext>(sp => sp.GetRequiredService<EmployeeDbContext>());
-
         services.AddScoped<EfEmployeeRepository>();
         services.AddScoped<IEmployeeSearchRepository>(sp => sp.GetRequiredService<EfEmployeeRepository>());
         services.AddScoped<IEmployeeReader>(sp => sp.GetRequiredService<EfEmployeeRepository>());

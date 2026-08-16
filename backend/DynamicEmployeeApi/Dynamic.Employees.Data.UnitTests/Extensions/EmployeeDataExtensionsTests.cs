@@ -15,15 +15,10 @@ public class EmployeeDataExtensionsTests
         ServiceCollection services = new();
 
         // Act
-        IServiceCollection result = services.RegisterEmployeeDataServices(
-            "Server=(localdb)\\mssqllocaldb;Database=DynamicHrTests;Trusted_Connection=True;");
+        IServiceCollection result = services.RegisterEmployeeDataServices();
 
         // Assert
         result.Should().BeSameAs(services);
-        services.Should().Contain(descriptor =>
-            descriptor.ServiceType == typeof(BaseEmployeeDbContext) &&
-            descriptor.Lifetime == ServiceLifetime.Scoped &&
-            descriptor.ImplementationFactory != null);
         services.Should().Contain(descriptor =>
             descriptor.ServiceType == typeof(EfEmployeeRepository) &&
             descriptor.Lifetime == ServiceLifetime.Scoped);

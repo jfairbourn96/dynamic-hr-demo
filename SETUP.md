@@ -59,20 +59,23 @@ Current backend projects:
 ```text
 Dynamic.Employees.Domain                 Domain models and enums
 Dynamic.Employees.Application            Use-case services, commands, search models, and repository ports
-Dynamic.Employees.Data                   EF Core DbContext, migrations, configurations, and repositories
+Dynamic.Employees.Data                   Shared EF Core model and repositories
+Dynamic.Employees.Data.SqlServer         SQL Server context, registration, and migrations
+Dynamic.Employees.Data.PostgreSql        PostgreSQL context, registration, and migrations
 EmployeeApi                              ASP.NET Core controllers, DTOs, mapping, and composition
 EmployeeApi.UnitTests                    API controller and mapping unit tests
 Dynamic.Employees.Application.UnitTests  Application unit tests
 Dynamic.Employees.Data.UnitTests         EF repository unit tests
-Dynamic.Employees.Data.IntegrationTests  SQL Server integration tests with Testcontainers
+Dynamic.Employees.Data.IntegrationTests  SQL Server and PostgreSQL tests with Testcontainers
 ```
 
 The HR projects consume the published Dynamic.Json packages:
 
 ```text
-Dynamic.Json.Search              0.2.1-preview.1
-Dynamic.Json.AspNetCore          0.2.1-preview.1
-Dynamic.Json.EfCore.SqlServer    0.2.1-preview.1
+Dynamic.Json.Search                 0.3.0-preview.1
+Dynamic.Json.AspNetCore             0.3.0-preview.1
+Dynamic.Json.EfCore.SqlServer       0.3.0-preview.1
+Dynamic.Json.EfCore.PostgreSql      0.3.0-preview.1
 ```
 
 ### Restore And Build
@@ -96,33 +99,46 @@ To use another SQL Server instance, override that connection string before apply
 
 ### Apply Migrations
 
-`EmployeeDbContext` and migrations live in `Dynamic.Employees.Data`. `EmployeeApi` is still the startup project because it provides configuration and dependency injection.
+Each provider owns its context and migration history. The API currently composes SQL Server.
 
 Run from the repository root:
 
 ```powershell
 dotnet ef database update `
-  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data `
-  --startup-project backend\DynamicEmployeeApi\EmployeeApi `
-  --context EmployeeDbContext
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.SqlServer `
+  --context SqlServerEmployeeDbContext
 ```
 
 ### Add A Migration
 
 ```powershell
 dotnet ef migrations add MigrationName `
-  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data `
-  --startup-project backend\DynamicEmployeeApi\EmployeeApi `
-  --context EmployeeDbContext
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.SqlServer `
+  --context SqlServerEmployeeDbContext
 ```
 
 Then apply it:
 
 ```powershell
 dotnet ef database update `
-  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data `
-  --startup-project backend\DynamicEmployeeApi\EmployeeApi `
-  --context EmployeeDbContext
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.SqlServer `
+  --context SqlServerEmployeeDbContext
+```
+
+For PostgreSQL migrations, use its provider project and context:
+
+```powershell
+dotnet ef migrations add MigrationName `
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.PostgreSql `
+  --context PostgreSqlEmployeeDbContext
+```
+
+Then apply it:
+
+```powershell
+dotnet ef database update `
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.PostgreSql `
+  --context PostgreSqlEmployeeDbContext
 ```
 
 ### Run The API

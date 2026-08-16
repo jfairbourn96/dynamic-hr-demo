@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Dynamic.Employees.Data\Dynamic.Employees.Data.csproj" />
+    <ProjectReference Include="..\Dynamic.Employees.Data.SqlServer\Dynamic.Employees.Data.SqlServer.csproj" />
+    <ProjectReference Include="..\Dynamic.Employees.Data.PostgreSql\Dynamic.Employees.Data.PostgreSql.csproj" />
   </ItemGroup>
 
   <ItemGroup>

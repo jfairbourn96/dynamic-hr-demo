@@ -1,6 +1,6 @@
 using Dynamic.Employees.Application.Extensions;
-using Dynamic.Employees.Data;
-using Dynamic.Employees.Data.Extensions;
+using Dynamic.Employees.Data.SqlServer;
+using Dynamic.Employees.Data.SqlServer.Extensions;
 using Dynamic.Json.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +10,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
 
-builder.Services.RegisterEmployeeDataServices(connectionString);
+builder.Services.RegisterSqlServerEmployeeData(connectionString);
 builder.Services.RegisterEmployeeApplicationServices();
 builder.Services.AddDynamicJsonAspNetCore();
 
@@ -34,7 +34,7 @@ WebApplication app = builder.Build();
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
 {
     using IServiceScope scope = app.Services.CreateScope();
-    EmployeeDbContext dbContext = scope.ServiceProvider.GetRequiredService<EmployeeDbContext>();
+    SqlServerEmployeeDbContext dbContext = scope.ServiceProvider.GetRequiredService<SqlServerEmployeeDbContext>();
     await dbContext.Database.MigrateAsync();
 }
 
