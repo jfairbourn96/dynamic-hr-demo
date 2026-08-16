@@ -18,5 +18,11 @@ public abstract class BaseEmployeeDbContext(DbContextOptions options) : DbContex
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BaseEmployeeDbContext).Assembly);
+        ConfigureProviderModel(modelBuilder);
+    }
+
+    /// <summary>Applies database-provider-specific model configuration.</summary>
+    protected virtual void ConfigureProviderModel(ModelBuilder modelBuilder)
+    {
     }
 }

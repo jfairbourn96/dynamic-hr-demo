@@ -2,6 +2,8 @@ using System.Text.Json.Nodes;
 using Dynamic.Employees.Application.Models;
 using Dynamic.Employees.Data.Extensions;
 using Dynamic.Employees.Data.Repositories;
+using Dynamic.Employees.Data.SqlServer;
+using Dynamic.Employees.Data.SqlServer.Extensions;
 using Dynamic.Employees.Domain.Enums;
 using Dynamic.Employees.Domain.Models;
 using Dynamic.Json.EfCore.SqlServer;
@@ -27,14 +29,14 @@ public sealed class EmployeeRepositorySqlServerIntegrationTests
     [Fact]
     public async Task EmployeeTypeRepository_RoundTripsOwnedJsonFieldsAndOptions()
     {
-        await using EmployeeDbContext context = CreateContext();
+        await using SqlServerEmployeeDbContext context = CreateContext();
         await context.Database.MigrateAsync();
         EfEmployeeTypeRepository repository = new(context);
         EmployeeType employeeType = CreateEmployeeType();
 
         await repository.AddAsync(employeeType);
 
-        await using EmployeeDbContext reloadContext = CreateContext(context.Database.GetConnectionString()!);
+        await using SqlServerEmployeeDbContext reloadContext = CreateContext(context.Database.GetConnectionString()!);
         EfEmployeeTypeRepository reloadRepository = new(reloadContext);
         EmployeeType? persisted = await reloadRepository.GetByIdAsync(employeeType.Id);
 
@@ -54,7 +56,7 @@ public sealed class EmployeeRepositorySqlServerIntegrationTests
     [Fact]
     public async Task EmployeeRepository_RoundTripsJsonFieldValues()
     {
-        await using EmployeeDbContext context = CreateContext();
+        await using SqlServerEmployeeDbContext context = CreateContext();
         await context.Database.MigrateAsync();
         EmployeeType employeeType = CreateEmployeeType();
         Employee employee = CreateEmployee(employeeType.Id, "Bluey", "Heeler", "bluey@heeler.example", "Heeler House", new JsonObject
@@ -72,7 +74,7 @@ public sealed class EmployeeRepositorySqlServerIntegrationTests
 
         await repository.AddAsync(employee);
 
-        await using EmployeeDbContext reloadContext = CreateContext(context.Database.GetConnectionString()!);
+        await using SqlServerEmployeeDbContext reloadContext = CreateContext(context.Database.GetConnectionString()!);
         EfEmployeeRepository reloadRepository = new(reloadContext);
         Employee? persisted = await reloadRepository.GetByIdAsync(employee.Id);
 
@@ -95,12 +97,12 @@ public sealed class EmployeeRepositorySqlServerIntegrationTests
     {
         string connectionString = CreateDatabaseConnectionString();
         ServiceCollection services = new();
-        services.RegisterEmployeeDataServices(connectionString);
+        services.RegisterSqlServerEmployeeData(connectionString);
 
         await using ServiceProvider provider = services.BuildServiceProvider();
         using IServiceScope scope = provider.CreateScope();
 
-        EmployeeDbContext context = scope.ServiceProvider.GetRequiredService<EmployeeDbContext>();
+        SqlServerEmployeeDbContext context = scope.ServiceProvider.GetRequiredService<SqlServerEmployeeDbContext>();
         await context.Database.MigrateAsync();
 
         EfEmployeeTypeRepository employeeTypeRepository = scope.ServiceProvider.GetRequiredService<EfEmployeeTypeRepository>();
@@ -173,7 +175,7 @@ public sealed class EmployeeRepositorySqlServerIntegrationTests
     [Fact]
     public async Task EmployeeRepository_SearchAsync_TranslatesRemainingDynamicOperatorsAgainstSqlServer()
     {
-        await using EmployeeDbContext context = CreateContext();
+        await using SqlServerEmployeeDbContext context = CreateContext();
         await context.Database.MigrateAsync();
         EmployeeType employeeType = CreateEmployeeType();
         context.EmployeeTypes.Add(employeeType);
@@ -243,17 +245,17 @@ public sealed class EmployeeRepositorySqlServerIntegrationTests
             PageSize: 20));
     }
 
-    private EmployeeDbContext CreateContext()
+    private SqlServerEmployeeDbContext CreateContext()
         => CreateContext(CreateDatabaseConnectionString());
 
-    private static EmployeeDbContext CreateContext(string connectionString)
+    private static SqlServerEmployeeDbContext CreateContext(string connectionString)
     {
-        DbContextOptionsBuilder<EmployeeDbContext> builder = new DbContextOptionsBuilder<EmployeeDbContext>()
+        DbContextOptionsBuilder<SqlServerEmployeeDbContext> builder = new DbContextOptionsBuilder<SqlServerEmployeeDbContext>()
             .UseSqlServer(connectionString);
 
         builder.UseDynamicJsonSqlServer();
 
-        return new EmployeeDbContext(builder.Options);
+        return new SqlServerEmployeeDbContext(builder.Options);
     }
 
     private string CreateDatabaseConnectionString()

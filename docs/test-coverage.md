@@ -44,6 +44,8 @@ API unit tests branch coverage: 90.90%
 | `Dynamic.Employees.Data` | Employee type repository reads/writes | Covered | EF-backed create and read behavior are covered with the in-memory provider. |
 | `Dynamic.Employees.Data` | Data service registration | Covered | DbContext, repository, and repository-port registrations are covered. |
 | `Dynamic.Employees.Data` | SQL Server JSON persistence and search | Covered by integration tests | Testcontainers starts SQL Server and verifies owned JSON fields, JSON field values, and provider-backed dynamic search filters. |
+| Provider data projects | Dependency and migration isolation | Covered | Unit tests verify both provider registrations and ensure Domain/Application reference no database provider; each provider owns a separate context and migration snapshot. |
+| `Dynamic.Employees.Data.PostgreSql` | PostgreSQL `jsonb` persistence | Covered by integration tests | Testcontainers starts PostgreSQL 18, applies its independent migration, and round-trips employee dynamic values through a fresh context. |
 | `EmployeeApi` | Controllers and request/response mappings | Covered | Focused unit tests cover status results, request-command mapping, and stable response contracts. |
 
 ## Future Coverage Triggers

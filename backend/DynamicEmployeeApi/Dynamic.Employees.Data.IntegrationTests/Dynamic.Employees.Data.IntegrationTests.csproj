@@ -14,6 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Testcontainers.MsSql" Version="4.13.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.13.0" />
     <PackageReference Include="coverlet.collector" Version="10.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -26,7 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Dynamic.Employees.Data\Dynamic.Employees.Data.csproj" />
+    <ProjectReference Include="..\Dynamic.Employees.Data.SqlServer\Dynamic.Employees.Data.SqlServer.csproj" />
+    <ProjectReference Include="..\Dynamic.Employees.Data.PostgreSql\Dynamic.Employees.Data.PostgreSql.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -227,17 +227,21 @@ The backend follows the dependency direction used in clean architecture:
 
 ```text
 EmployeeApi -> Dynamic.Employees.Application
-EmployeeApi -> Dynamic.Employees.Data
+EmployeeApi -> Dynamic.Employees.Data.SqlServer
 Dynamic.Employees.Application -> Dynamic.Employees.Domain
 Dynamic.Employees.Data -> Dynamic.Employees.Application
 Dynamic.Employees.Data -> Dynamic.Employees.Domain
+Dynamic.Employees.Data.SqlServer -> Dynamic.Employees.Data
+Dynamic.Employees.Data.PostgreSql -> Dynamic.Employees.Data
 ```
 
 `Dynamic.Employees.Domain` has no ASP.NET Core, EF Core, SQL Server, or Dynamic.Json package references. It contains the core employee model only.
 
 `Dynamic.Employees.Application` owns use-case orchestration. It defines commands, search criteria/results, service interfaces/implementations, and repository ports such as `IEmployeeSearchRepository`, `IEmployeeReader`, and `IEmployeeWriter`.
 
-`Dynamic.Employees.Data` implements those ports with EF Core and SQL Server. It owns `EmployeeDbContext`, migrations, entity configurations, and Dynamic.Json EF/SQL Server query translation.
+`Dynamic.Employees.Data` implements those ports with provider-neutral EF Core repositories and shared entity configuration. It contains no SQL Server or PostgreSQL package reference.
+
+`Dynamic.Employees.Data.SqlServer` and `Dynamic.Employees.Data.PostgreSql` own their concrete contexts, provider registration, Dynamic.Json translators, dependencies, and independent migrations. PostgreSQL maps both dynamic values and owned field metadata to native `jsonb`.
 
 `EmployeeApi` is the delivery layer. It owns controllers, HTTP request/response DTOs, mapping extensions, and dependency injection composition. It does not own EF Core migrations or the concrete DbContext.
 
@@ -258,9 +262,10 @@ Write methods persist internally, so the application services do not call `SaveC
 
 The backend consumes the published Dynamic.Json preview packages:
 
-- [`Dynamic.Json.Search`](https://www.nuget.org/packages/Dynamic.Json.Search) `0.2.1-preview.1` in Application for provider-neutral dynamic search parsing and filter models.
-- [`Dynamic.Json.EfCore.SqlServer`](https://www.nuget.org/packages/Dynamic.Json.EfCore.SqlServer) `0.2.1-preview.1` in Data for SQL Server JSON query translation.
-- [`Dynamic.Json.AspNetCore`](https://www.nuget.org/packages/Dynamic.Json.AspNetCore) `0.2.1-preview.1` in EmployeeApi for ASP.NET Core service registration/adapters.
+- [`Dynamic.Json.Search`](https://www.nuget.org/packages/Dynamic.Json.Search) `0.3.0-preview.1` in Application.
+- [`Dynamic.Json.EfCore.SqlServer`](https://www.nuget.org/packages/Dynamic.Json.EfCore.SqlServer) `0.3.0-preview.1` in the SQL Server data project.
+- `Dynamic.Json.EfCore.PostgreSql` `0.3.0-preview.1` in the PostgreSQL data project.
+- [`Dynamic.Json.AspNetCore`](https://www.nuget.org/packages/Dynamic.Json.AspNetCore) `0.3.0-preview.1` in EmployeeApi.
 
 ## Search Examples
 
@@ -280,20 +285,32 @@ Supported dynamic field categories are text, number, date, boolean, and select. 
 
 ## Migrations
 
-`EmployeeDbContext` and migrations live in `Dynamic.Employees.Data`. Run EF commands from the repository root with Data as the migrations project and EmployeeApi as the startup project:
+Migrations are isolated by provider. For SQL Server:
 
 ```powershell
 dotnet ef migrations add MigrationName `
-  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data `
-  --startup-project backend\DynamicEmployeeApi\EmployeeApi `
-  --context EmployeeDbContext
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.SqlServer `
+  --context SqlServerEmployeeDbContext
 ```
 
 ```powershell
 dotnet ef database update `
-  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data `
-  --startup-project backend\DynamicEmployeeApi\EmployeeApi `
-  --context EmployeeDbContext
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.SqlServer `
+  --context SqlServerEmployeeDbContext
+```
+
+For PostgreSQL, substitute its provider project and context:
+
+```powershell
+dotnet ef migrations add MigrationName `
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.PostgreSql `
+  --context PostgreSqlEmployeeDbContext
+```
+
+```powershell
+dotnet ef database update `
+  --project backend\DynamicEmployeeApi\Dynamic.Employees.Data.PostgreSql `
+  --context PostgreSqlEmployeeDbContext
 ```
 
 The API is configured to use the Docker-published SQL Server instance at `localhost:1433` by default. Compose overrides this with the internal `sqlserver` service hostname when the API itself runs in Docker.
@@ -306,7 +323,7 @@ Backend tests:
 dotnet test backend\DynamicEmployeeApi\DynamicEmployeeApi.sln
 ```
 
-The integration test project uses Testcontainers to run SQL Server for provider-specific persistence and JSON search coverage.
+The integration test project uses Testcontainers for SQL Server and PostgreSQL provider persistence, migrations, and JSON behavior.
 
 Coverage:
 

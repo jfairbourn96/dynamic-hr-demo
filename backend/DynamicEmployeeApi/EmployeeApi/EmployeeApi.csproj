@@ -6,10 +6,10 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Dynamic.Employees.Application\Dynamic.Employees.Application.csproj" />
-    <ProjectReference Include="..\Dynamic.Employees.Data\Dynamic.Employees.Data.csproj" />
+    <ProjectReference Include="..\Dynamic.Employees.Data.SqlServer\Dynamic.Employees.Data.SqlServer.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Dynamic.Json.AspNetCore" Version="0.2.1-preview.1" />
+    <PackageReference Include="Dynamic.Json.AspNetCore" Version="0.3.0-preview.1" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="EmployeeApi.UnitTests" />
