@@ -100,11 +100,19 @@ With Docker Desktop or Docker Engine installed, start the complete stack with on
 docker compose up --build
 ```
 
-Compose starts SQL Server, applies EF Core migrations when the API starts, loads the professional demo data on a fresh database volume, serves the API, and builds the React frontend behind nginx. Open [http://localhost:5173](http://localhost:5173).
+Compose starts SQL Server by default, applies EF Core migrations when the API starts, loads the professional demo data on a fresh database volume, serves the API, and builds the React frontend behind nginx. Open [http://localhost:5173](http://localhost:5173).
 
 The API is also available directly at `http://localhost:5154`. The seed container skips its scripts when employee types already exist, so it never overwrites a running demo database. Stop the stack with `docker compose down`; add `-v` to remove the persisted SQL Server data volume and seed a fresh database on the next start.
 
 For a non-default development SQL Server password, create a root `.env` file containing `MSSQL_SA_PASSWORD=your-strong-password` before starting Compose.
+
+To run the same application against PostgreSQL instead, stop the default stack and explicitly start the PostgreSQL services:
+
+```powershell
+docker compose --profile postgres up --build postgres api-postgres seed-postgres frontend-postgres
+```
+
+This uses the same API and frontend images, applies the PostgreSQL migrations, and loads an idempotent `jsonb`-backed demo dataset. Stop it with `docker compose --profile postgres down`; add `-v` to remove its persisted volume. Set `POSTGRES_PASSWORD` in `.env` to override the development-only default.
 
 ## Quick Start Without Docker
 
@@ -313,7 +321,7 @@ dotnet ef database update `
   --context PostgreSqlEmployeeDbContext
 ```
 
-The API is configured to use the Docker-published SQL Server instance at `localhost:1433` by default. Compose overrides this with the internal `sqlserver` service hostname when the API itself runs in Docker.
+The API selects persistence with `Database:Provider`, accepting `SqlServer` or `PostgreSql`. SQL Server is the backward-compatible default. Each provider reads its matching named connection string (`ConnectionStrings:SqlServer` or `ConnectionStrings:PostgreSql`), owns its migrations, and registers its Dynamic.Json translator. Compose supplies these settings for the selected stack.
 
 ## Tests
 

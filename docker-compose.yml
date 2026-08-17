@@ -22,8 +22,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      Database__Provider: SqlServer
       Database__ApplyMigrationsOnStartup: "true"
-      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=DynamicHr;User Id=sa;Password=${MSSQL_SA_PASSWORD:-DynamicHr!Passw0rd};TrustServerCertificate=True;Encrypt=False
+      ConnectionStrings__SqlServer: Server=sqlserver,1433;Database=DynamicHr;User Id=sa;Password=${MSSQL_SA_PASSWORD:-DynamicHr!Passw0rd};TrustServerCertificate=True;Encrypt=False
       Cors__AllowedOrigins: http://localhost:5173
     depends_on:
       sqlserver:
@@ -60,5 +61,77 @@ services:
     ports:
       - "5173:80"
 
+  postgres:
+    profiles: ["postgres"]
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: DynamicHr
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d DynamicHr"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  api-postgres:
+    profiles: ["postgres"]
+    build:
+      context: ./backend/DynamicEmployeeApi
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Database__Provider: PostgreSql
+      Database__ApplyMigrationsOnStartup: "true"
+      ConnectionStrings__PostgreSql: Host=postgres;Port=5432;Database=DynamicHr;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
+      Cors__AllowedOrigins: http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5154:8080"
+    networks:
+      default:
+        aliases:
+          - api
+
+  seed-postgres:
+    profiles: ["postgres"]
+    image: postgres:18-alpine
+    entrypoint: ["/bin/sh", "/seed-scripts/docker-seed-postgres.sh"]
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: DynamicHr
+      POSTGRES_USER: postgres
+    volumes:
+      - ./scripts:/seed-scripts:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-postgres:
+        condition: service_started
+    restart: "no"
+
+  frontend-postgres:
+    profiles: ["postgres"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    depends_on:
+      seed-postgres:
+        condition: service_completed_successfully
+    ports:
+      - "5173:80"
+
 volumes:
   sqlserver-data:
+  postgres-data:
