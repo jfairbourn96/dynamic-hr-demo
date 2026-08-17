@@ -117,7 +117,7 @@ The API defaults to SQL Server and contains named development connection strings
 }
 ```
 
-Override `Database__Provider` and the matching named connection string to select a provider. A legacy `DefaultConnection` remains accepted only for the default SQL Server path. Compose supplies provider-specific settings and sets `Database__ApplyMigrationsOnStartup=true`, so no manual migration command is needed for either Docker workflow.
+Override `Database__Provider` and the matching named connection string to select a provider. Compose supplies provider-specific settings and sets `Database__ApplyMigrationsOnStartup=true`, so no manual migration command is needed for either Docker workflow.
 
 ### Apply Migrations
 

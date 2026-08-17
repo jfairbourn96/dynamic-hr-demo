@@ -24,9 +24,9 @@ public static class EmployeeDatabaseExtensions
         return provider.ToUpperInvariant() switch
         {
             "SQLSERVER" => services.RegisterSqlServerEmployeeData(
-                GetRequiredConnectionString(configuration, SqlServerProvider, allowLegacyDefault: true)),
+                GetRequiredConnectionString(configuration, SqlServerProvider)),
             "POSTGRESQL" => services.RegisterPostgreSqlEmployeeData(
-                GetRequiredConnectionString(configuration, PostgreSqlProvider, allowLegacyDefault: false)),
+                GetRequiredConnectionString(configuration, PostgreSqlProvider)),
             _ => throw new InvalidOperationException(
                 $"Unsupported database provider '{provider}'. Supported values are '{SqlServerProvider}' and '{PostgreSqlProvider}'."),
         };
@@ -44,15 +44,9 @@ public static class EmployeeDatabaseExtensions
 
     private static string GetRequiredConnectionString(
         IConfiguration configuration,
-        string provider,
-        bool allowLegacyDefault)
+        string provider)
     {
         string? connectionString = configuration.GetConnectionString(provider);
-        if (allowLegacyDefault)
-        {
-            connectionString ??= configuration.GetConnectionString("DefaultConnection");
-        }
-
         return connectionString ?? throw new InvalidOperationException(
             $"Connection string '{provider}' is not configured for database provider '{provider}'.");
     }

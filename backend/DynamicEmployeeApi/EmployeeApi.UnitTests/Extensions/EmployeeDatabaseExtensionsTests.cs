@@ -11,10 +11,10 @@ namespace EmployeeApi.UnitTests.Extensions;
 public sealed class EmployeeDatabaseExtensionsTests
 {
     [Fact]
-    public void RegisterConfiguredEmployeeDatabase_DefaultsToSqlServerAndSupportsLegacyConnectionString()
+    public void RegisterConfiguredEmployeeDatabase_WithoutProvider_DefaultsToNamedSqlServerConfiguration()
     {
         IConfiguration configuration = Configuration(
-            ("ConnectionStrings:DefaultConnection", "Server=localhost;Database=DynamicHr;Integrated Security=true"));
+            ("ConnectionStrings:SqlServer", "Server=localhost;Database=DynamicHr;Integrated Security=true"));
         ServiceCollection services = new();
 
         services.RegisterConfiguredEmployeeDatabase(configuration);
