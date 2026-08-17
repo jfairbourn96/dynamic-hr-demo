@@ -46,6 +46,24 @@ docker compose down
 
 Add `-v` to also remove the persisted SQL Server data volume. The next `docker compose up --build` then creates and seeds a fresh demo database. Compose uses a development-only default password; set `MSSQL_SA_PASSWORD` in a root `.env` file to override it.
 
+### Run With PostgreSQL
+
+Stop the default stack if it is running, then start the explicitly targeted PostgreSQL services:
+
+```powershell
+docker compose --profile postgres up --build postgres api-postgres seed-postgres frontend-postgres
+```
+
+The same API and frontend run at `http://localhost:5154` and `http://localhost:5173`. The API selects PostgreSQL through configuration, applies its provider-specific migrations, and the one-shot seed service loads a small professional `jsonb` dataset when the database is empty.
+
+Stop the PostgreSQL stack with:
+
+```powershell
+docker compose --profile postgres down
+```
+
+Add `-v` to remove PostgreSQL data. Set `POSTGRES_PASSWORD` in `.env` to override the development-only password.
+
 ## Backend
 
 The backend solution lives at:
@@ -89,17 +107,21 @@ dotnet build backend\DynamicEmployeeApi\DynamicEmployeeApi.sln
 
 ### Database
 
-The default connection string in `backend/DynamicEmployeeApi/EmployeeApi/appsettings.json` targets the Docker-published SQL Server instance:
+The API defaults to SQL Server and contains named development connection strings for both providers:
 
 ```json
-"DefaultConnection": "Server=localhost,1433;Database=DynamicHr;User Id=sa;Password=DynamicHr!Passw0rd;TrustServerCertificate=True;Encrypt=False;"
+"Database": { "Provider": "SqlServer" },
+"ConnectionStrings": {
+  "SqlServer": "Server=localhost,1433;Database=DynamicHr;...",
+  "PostgreSql": "Host=localhost;Port=5432;Database=DynamicHr;..."
+}
 ```
 
-To use another SQL Server instance, override that connection string before applying migrations. The Compose API container supplies its own connection string and sets `Database__ApplyMigrationsOnStartup=true`, so no manual migration command is needed for the Docker workflow.
+Override `Database__Provider` and the matching named connection string to select a provider. A legacy `DefaultConnection` remains accepted only for the default SQL Server path. Compose supplies provider-specific settings and sets `Database__ApplyMigrationsOnStartup=true`, so no manual migration command is needed for either Docker workflow.
 
 ### Apply Migrations
 
-Each provider owns its context and migration history. The API currently composes SQL Server.
+Each provider owns its context and migration history. The API composes the provider selected by `Database:Provider`.
 
 Run from the repository root:
 

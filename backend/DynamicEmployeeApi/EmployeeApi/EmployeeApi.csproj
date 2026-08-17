@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Dynamic.Employees.Application\Dynamic.Employees.Application.csproj" />
+    <ProjectReference Include="..\Dynamic.Employees.Data.PostgreSql\Dynamic.Employees.Data.PostgreSql.csproj" />
     <ProjectReference Include="..\Dynamic.Employees.Data.SqlServer\Dynamic.Employees.Data.SqlServer.csproj" />
   </ItemGroup>
   <ItemGroup>
